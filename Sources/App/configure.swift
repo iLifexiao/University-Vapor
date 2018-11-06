@@ -1,33 +1,50 @@
-import FluentSQLite
+import Authentication
+import FluentPostgreSQL
 import Vapor
 
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Environment, _ services: inout Services) throws {
-    /// Register providers first
-    try services.register(FluentSQLiteProvider())
-
-    /// Register routes to the router
+    /// 注册数据库驱动 Register providers first
+    try services.register(FluentPostgreSQLProvider())
+    /// 配置数据库
+    let postgresqlConfig = PostgreSQLDatabaseConfig(
+        hostname: "127.0.0.1",
+        port: 5432,
+        username: "iLife",
+        database: "vapor",
+        password: nil
+    )
+    services.register(postgresqlConfig)
+    
+    // 注册路由
     let router = EngineRouter.default()
     try routes(router)
     services.register(router, as: Router.self)
-
-    /// Register middleware
+    
+    // 注册Auth
+    try services.register(AuthenticationProvider())
+    
+    /// 注册中间组件
     var middlewares = MiddlewareConfig() // Create _empty_ middleware config
-    /// middlewares.use(FileMiddleware.self) // Serves files from `Public/` directory
-    middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
+    // 1. 跨域请求设置
+    let corsConfiguration = CORSMiddleware.Configuration(
+        allowedOrigin: .all,
+        allowedMethods: [.GET, .POST, .PUT, .OPTIONS, .DELETE, .PATCH],
+        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith, .userAgent, .accessControlAllowOrigin]
+    )
+    let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
+    middlewares.use(corsMiddleware)
+    // 2. 静态资源 Serves files from `Public/` directory
+    middlewares.use(FileMiddleware.self)
+    // 3. 错误处理 Catches errors and converts to HTTP response
+    middlewares.use(ErrorMiddleware.self)
+    
     services.register(middlewares)
-
-    // Configure a SQLite database
-    let sqlite = try SQLiteDatabase(storage: .memory)
-
-    /// Register the configured SQLite database to the database config.
-    var databases = DatabasesConfig()
-    databases.add(database: sqlite, as: .sqlite)
-    services.register(databases)
-
-    /// Configure migrations
+    
+    /// 配置数据库迁移（当你在模型里面修改后会自动更新数据库）
     var migrations = MigrationConfig()
-    migrations.add(model: Todo.self, database: .sqlite)
+    migrations.add(model: Todo.self, database: .psql)
+    migrations.add(model: APIUser.self, database: .psql)
+    migrations.add(model: APIToken.self, database: .psql)
     services.register(migrations)
-
 }
