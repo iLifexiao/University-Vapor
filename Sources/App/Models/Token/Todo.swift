@@ -8,6 +8,9 @@ final class Todo: PostgreSQLModel {
 
     /// A title describing what this `Todo` entails.
     var title: String
+    
+    /// 默认时间戳，采用Optional表示
+    var createdAt: TimeInterval?
 
     /// Creates a new `Todo`.
     init(id: Int? = nil, title: String) {

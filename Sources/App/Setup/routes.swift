@@ -2,9 +2,13 @@ import Vapor
 
 /// Register your application's routes here.
 public func routes(_ router: Router) throws {
-    // Basic "Hello, world!" example
+    
     router.get("hello") { req in
         return "Hello, world!"
+    }
+    
+    router.get("view") { req -> Future<View> in
+        return try req.view().render("welcome")
     }
 
     // 御用创建和使用认证，后期可以移除
@@ -20,9 +24,5 @@ public func routes(_ router: Router) throws {
     
     // Example of configuring a controller
     let todoController = TodoController()
-    authedRoutes.get("todos", use: todoController.index)
-    authedRoutes.post("todos", use: todoController.create)
-    authedRoutes.patch("todos", Todo.parameter, use: todoController.patch)
-    authedRoutes.delete("todos", Todo.parameter, use: todoController.delete)
-    
+    try authedRoutes.register(collection: todoController)
 }
