@@ -14,14 +14,18 @@ final class Honor: PostgreSQLModel {
     
     var name: String
     var rank: String
-    var status: Int // 状态[0, 1] = [禁止, 正常]    
+    var time: TimeInterval // 获得时间
+    var status: Int? // 状态[0, 1] = [禁止, 正常]
+    
     var createdAt: TimeInterval? // 创建时间
+    var updatedAt: TimeInterval? // 更新时间
         
-    init(id: Int? = nil, userID: User.ID, name: String, rank: String, status: Int = 1) {
+    init(id: Int? = nil, userID: User.ID, name: String, rank: String, time: TimeInterval, status: Int? = 1) {
         self.id = id
         self.userID = userID
         self.name = name
         self.rank = rank
+        self.time = time
         self.status = status
     }
 }

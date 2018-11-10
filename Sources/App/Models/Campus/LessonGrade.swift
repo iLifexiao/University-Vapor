@@ -20,12 +20,13 @@ final class LessonGrade: PostgreSQLModel {
     var gradePoint: Float
     var grade: Float
     
-    var status: Int // 状态[0, 1] = [禁止, 正常]
+    var status: Int? // 状态[0, 1] = [禁止, 正常]
     var remark: String? // 备注
-    var createdAt: TimeInterval? // 创建时间
+    var createdAt: TimeInterval? // 创建时间    
+    var updatedAt: TimeInterval? // 更新时间
     
     
-    init(id: Int? = nil, studentID: Student.ID, scheduleID: LessonSchedule.ID, no: String, name: String, type: String, credit: Float, gradePoint: Float, grade: Float, remark: String?, status: Int = 1) {
+    init(id: Int? = nil, studentID: Student.ID, scheduleID: LessonSchedule.ID, no: String, name: String, type: String, credit: Float, gradePoint: Float, grade: Float, remark: String?, status: Int? = 1) {
         self.id = id
         self.studentID = studentID
         self.scheduleID = scheduleID

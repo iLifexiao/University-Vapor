@@ -18,14 +18,16 @@ final class Book: PostgreSQLModel {
     var type: String
     var author: String
     var bookPages: Int
-    var readedCount: Int
-    var likeCount: Int
     
-    var status: Int // 状态[0, 1] = [禁止, 正常]
+    var readedCount: Int?
+    var likeCount: Int?
+    
+    var status: Int? // 状态[0, 1] = [禁止, 正常]
     var createdAt: TimeInterval? // 创建时间
+    var updatedAt: TimeInterval? // 更新时间
     
     
-    init(id: Int? = nil, userID: User.ID, name: String, imageURL: String, introduce: String, type: String, author: String, bookPages: Int, readedCount: Int = 0, likeCount: Int = 0, status: Int = 1) {
+    init(id: Int? = nil, userID: User.ID, name: String, imageURL: String, introduce: String, type: String, author: String, bookPages: Int, readedCount: Int? = 0, likeCount: Int? = 0, status: Int? = 1) {
         self.id = id
         self.userID = userID
         self.name = name

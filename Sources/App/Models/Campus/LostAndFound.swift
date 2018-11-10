@@ -1,5 +1,5 @@
 //
-//  LostAndFonud.swift
+//  LostAndFound.swift
 //  App
 //
 //  Created by 肖权 on 2018/11/7.
@@ -8,7 +8,7 @@
 import Vapor
 import FluentPostgreSQL
 
-final class LostAndFonud: PostgreSQLModel {
+final class LostAndFound: PostgreSQLModel {
     var id: Int?
     var userID: User.ID
     
@@ -18,12 +18,13 @@ final class LostAndFonud: PostgreSQLModel {
     var time: TimeInterval
     var site: String
     
-    var status: Int // 状态[0, 1] = [禁止, 正常]
+    var status: Int? // 状态[0, 1] = [禁止, 正常]
     var remark: String? // 备注
     var createdAt: TimeInterval? // 创建时间
+    var updatedAt: TimeInterval? // 更新时间
     
     
-    init(id: Int? = nil, userID: User.ID, imageURL: [String]?, title: String, content: String, time: TimeInterval, site: String, status: Int = 1, remark: String?) {
+    init(id: Int? = nil, userID: User.ID, imageURL: [String]?, title: String, content: String, time: TimeInterval, site: String, status: Int? = 1, remark: String?) {
         self.id = id
         self.userID = userID
         self.imageURL = imageURL
@@ -36,12 +37,12 @@ final class LostAndFonud: PostgreSQLModel {
     }
 }
 
-extension LostAndFonud {
-    var user: Parent<LostAndFonud, User> {
+extension LostAndFound {
+    var user: Parent<LostAndFound, User> {
         return parent(\.userID)
     }
 }
 
-extension LostAndFonud: PostgreSQLMigration { }
-extension LostAndFonud: Content { }
-extension LostAndFonud: Parameter { }
+extension LostAndFound: PostgreSQLMigration { }
+extension LostAndFound: Content { }
+extension LostAndFound: Parameter { }

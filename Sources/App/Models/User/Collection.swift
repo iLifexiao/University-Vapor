@@ -15,11 +15,11 @@ final class Collection: PostgreSQLModel {
     var collectionID: Int
     var type: String // 收藏的类型[Resource、Essay、CampusNews、Book、Question、Answer、Experience]
     
-    var status: Int // 状态[0, 1] = [失效, 正常]
+    var status: Int? // 状态[0, 1] = [失效, 正常]
     var createdAt: TimeInterval? // 收藏时间
     
     
-    init(id: Int? = nil, userID: User.ID, collectionID: Int, type: String, status: Int = 1) {
+    init(id: Int? = nil, userID: User.ID, collectionID: Int, type: String, status: Int? = 1) {
         self.id = id
         self.userID = userID
         self.collectionID = collectionID

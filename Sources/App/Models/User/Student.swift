@@ -21,6 +21,9 @@ final class Student: PostgreSQLModel {
     var major: String // 专业
     var year: String // 入学年份
     var remark: String? // 备注
+        
+    var createdAt: TimeInterval? // 创建时间
+    var updatedAt: TimeInterval? // 更新时间
     
     init(id: Int? = nil, userID: User.ID,  number: String, password: String, name: String, sex: String, age: Int, school: String, major: String, year: String) {
         self.id = id
@@ -40,6 +43,10 @@ final class Student: PostgreSQLModel {
 extension Student {
     var user: Parent<Student, User> {
         return parent(\.userID)
+    }
+    // 课程
+    var lessons: Children<Student, Lesson> {
+        return children(\.studentID)
     }
 }
 

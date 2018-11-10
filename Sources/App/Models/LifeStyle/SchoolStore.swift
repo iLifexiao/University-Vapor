@@ -17,15 +17,16 @@ final class SchoolStore: PostgreSQLModel {
     var content: String
     var type: String
     var site: String
-    var time: TimeInterval
+    var time: String //营业时间
     var phone: String
     
-    var status: Int // 状态[0, 1] = [禁止, 正常]
+    var status: Int? // 状态[0, 1] = [禁止, 正常]
     var remark: String? // 备注
     var createdAt: TimeInterval? // 创建时间
+    var updatedAt: TimeInterval? // 更新时间
     
     
-    init(id: Int? = nil, name: String, imageURL: String, introduce: String, content: String, type: String, site: String, time: TimeInterval, phone: String, status: Int = 1) {
+    init(id: Int? = nil, name: String, imageURL: String, introduce: String, content: String, type: String, site: String, time: String, phone: String, status: Int? = 1) {
         self.id = id
         self.name = name
         self.imageURL = imageURL

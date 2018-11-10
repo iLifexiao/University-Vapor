@@ -19,11 +19,11 @@ final class IdleGood: PostgreSQLModel {
     var price: Float
     var type: String
     
-    var status: Int // 状态[0, 1, 2] = [下架, 正常, 删除]
+    var status: Int? // 状态[0, 1, 2] = [下架, 正常, 删除]
     var createdAt: TimeInterval? // 创建时间
+    var updatedAt: TimeInterval? // 更新时间
     
-    
-    init(id: Int? = nil, userID: User.ID, imageURLs: [String]?, title: String, content: String, originalPrice: Float, price: Float, type: String, status: Int = 1) {
+    init(id: Int? = nil, userID: User.ID, imageURLs: [String]?, title: String, content: String, originalPrice: Float, price: Float, type: String, status: Int? = 1) {
         self.id = id
         self.userID = userID
         self.imageURLs = imageURLs

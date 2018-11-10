@@ -16,14 +16,16 @@ final class Resource: PostgreSQLModel {
     var name: String
     var introduce: String
     var type: String
-    var likeCount: Int
-    var commentCount: Int
     
-    var status: Int // 状态[0, 1] = [禁止, 正常]
+    var likeCount: Int?
+    var commentCount: Int?
+    
+    var status: Int? // 状态[0, 1] = [禁止, 正常]
     var remark: String? // 备注
     var createdAt: TimeInterval? // 创建时间
+    var updatedAt: TimeInterval? // 更新时间
     
-    init(id: Int? = nil, userID: User.ID, imageURL: String, name: String, introduce: String, type: String,  likeCount: Int = 0, commentCount: Int = 0, remark: String?, status: Int = 1) {
+    init(id: Int? = nil, userID: User.ID, imageURL: String, name: String, introduce: String, type: String,  likeCount: Int? = 0, commentCount: Int? = 0, remark: String?, status: Int? = 1) {
         self.id = id
         self.userID = userID
         self.imageURL = imageURL

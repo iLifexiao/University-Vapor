@@ -6,6 +6,7 @@ final class TodoController: RouteCollection {
     // 路由分组
     func boot(router: Router) throws {
         let todoRouter = router.grouped("api", "v1", "todos")
+        todoRouter.get(Todo.parameter, use: aTodo)
         todoRouter.get(use: index)
         todoRouter.post(Todo.self, use: create)
         todoRouter.patch(Todo.parameter, use: patch)
@@ -19,6 +20,11 @@ extension TodoController {
     func index(_ req: Request) throws -> Future<[Todo]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return Todo.query(on: req).all()
+    }
+    
+    func aTodo(_ req: Request) throws -> Future<Todo> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Todo.self)
     }
     
     /// Saves a decoded `Todo` to the database.

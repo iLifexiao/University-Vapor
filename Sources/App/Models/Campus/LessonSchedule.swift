@@ -15,9 +15,10 @@ final class LessonSchedule: PostgreSQLModel {
     var year: String
     var term: String
     
-    var status: Int // 状态[0, 1] = [禁止, 正常]
+    var status: Int? // 状态[0, 1] = [禁止, 正常]
     var remark: String? // 备注
     var createdAt: TimeInterval? // 创建时间
+    var updatedAt: TimeInterval? // 更新时间
     
     init(id: Int? = nil, studentID: Student.ID, year: String, term: String, remark: String?, status: Int = 1) {
         self.id = id

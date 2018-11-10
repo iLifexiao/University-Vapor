@@ -16,14 +16,16 @@ final class CampusNews: PostgreSQLModel {
     var content: String
     var from: String // 来源：校内、网络等等
     var type: String // 科技、教育、社会等等
-    var commentCount: Int
-    var readCount: Int
+    
+    var commentCount: Int?
+    var readCount: Int?
 
-    var status: Int // 状态[0, 1] = [禁止, 正常]
+    var status: Int? // 状态[0, 1] = [禁止, 正常]
     var createdAt: TimeInterval? // 创建时间
+    var updatedAt: TimeInterval? // 更新时间
     
     
-    init(id: Int? = nil, imageURL: String, title: String, content: String, from: String, type: String, commentCount: Int = 0, readCount: Int = 0, status: Int = 1) {
+    init(id: Int? = nil, imageURL: String, title: String, content: String, from: String, type: String, commentCount: Int? = 0, readCount: Int? = 0, status: Int? = 1) {
         self.id = id
         self.imageURL = imageURL
         self.title = title

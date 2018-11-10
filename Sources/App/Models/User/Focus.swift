@@ -13,8 +13,8 @@ final class Focus: PostgreSQLModel {
     var userID: User.ID
     var focusUserID: User.ID
     
-    var status: Int // 状态[0, 1] = [禁止, 正常]
-    var createdAt: TimeInterval? // 关注时间
+    var status: Int? // 状态[0, 1] = [禁止, 正常]
+    var createdAt: TimeInterval? // 关注时间    
     
     
     init(id: Int? = nil, userID: User.ID, focusUserID: User.ID, status: Int = 1) {

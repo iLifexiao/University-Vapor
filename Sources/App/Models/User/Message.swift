@@ -16,12 +16,11 @@ final class Message: PostgreSQLModel {
     var toUserID: User.ID
     
     var content: String
-    var type: String // 类型「普通、系统」
-    var status: Int // 状态[0, 1, 2, 3] = [禁止、 未读、已读、删除]
+    var type: String? // 类型「普通、系统」
+    var status: Int? // 状态[0, 1, 2, 3] = [禁止、 未读、已读、删除]
     var createdAt: TimeInterval? // 创建时间
     
-    
-    init(id: Int? = nil, userID: User.ID, friendID: User.ID, fromUserID: User.ID, toUserID: User.ID, content: String, type: String, status: Int = 1) {
+    init(id: Int? = nil, userID: User.ID, friendID: User.ID, fromUserID: User.ID, toUserID: User.ID, content: String, type: String? = "普通", status: Int? = 1) {
         self.id = id
         self.userID = userID
         self.friendID = friendID

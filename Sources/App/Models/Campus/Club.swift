@@ -19,12 +19,12 @@ final class Club: PostgreSQLModel {
     var rank: String
     var type: String
     
-    var status: Int // 状态[0, 1] = [禁止, 正常]
+    var status: Int? // 状态[0, 1] = [禁止, 正常]
     var remark: String? // 备注
     var createdAt: TimeInterval? // 创建时间
-    
-    
-    init(id: Int? = nil, imageURL: String, name: String, introduce: String, time: TimeInterval, numbers: Int, rank: String, type: String, status: Int = 1) {
+    var updatedAt: TimeInterval? // 更新时间
+        
+    init(id: Int? = nil, imageURL: String, name: String, introduce: String, time: TimeInterval, numbers: Int, rank: String, type: String, status: Int? = 1) {
         self.id = id
         self.imageURL = imageURL
         self.name = name

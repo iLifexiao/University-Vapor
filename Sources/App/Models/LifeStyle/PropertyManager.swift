@@ -16,11 +16,12 @@ final class PropertyManager: PostgreSQLModel {
     var phone: String
     var ability: String // 工作
     
-    var status: Int // 状态[0, 1] = [禁止, 正常]
+    var status: Int? // 状态[0, 1] = [禁止, 正常]
     var createdAt: TimeInterval? // 创建时间
+    var updatedAt: TimeInterval? // 更新时间
     
     
-    init(id: Int? = nil, imageURL: String, name: String, phone: String, ability: String, status: Int = 1) {
+    init(id: Int? = nil, imageURL: String, name: String, phone: String, ability: String, status: Int? = 1) {
         self.id = id
         self.imageURL = imageURL
         self.name = name
