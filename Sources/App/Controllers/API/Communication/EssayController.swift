@@ -40,6 +40,10 @@ extension EssayController {
     func createHandler(_ req: Request, essay: Essay) throws -> Future<Essay> {
         _ = try req.requireAuthenticated(APIUser.self)
         essay.createdAt = Date().timeIntervalSince1970
+        essay.status = 1
+        essay.likeCount = 0
+        essay.commentCount = 0
+        essay.readCount = 0
         return essay.save(on: req)
     }
     

@@ -13,6 +13,7 @@ public func migrate(migrations: inout MigrationConfig) throws {
     // Auth
     migrations.add(model: APIUser.self, database: .psql)
     migrations.add(model: APIToken.self, database: .psql)
+    migrations.add(model: RegisterCode.self, database: .psql)
     
     // Test_CRUD
     migrations.add(model: Todo.self, database: .psql)

@@ -22,7 +22,6 @@ final class HonorController: RouteCollection {
         group.get("search", use: searchHandler)
         group.get("sort", use: sortedHandler)
     }
-    
 }
 
 extension HonorController {
@@ -40,6 +39,7 @@ extension HonorController {
     func createHandler(_ req: Request, honor: Honor) throws -> Future<Honor> {
         _ = try req.requireAuthenticated(APIUser.self)
         honor.createdAt = Date().timeIntervalSince1970
+        honor.status = 1
         return honor.save(on: req)
     }
     
@@ -70,7 +70,7 @@ extension HonorController {
         return Honor.query(on: req).group(.or) { or in
             or.filter(\.name == searchTerm)
             or.filter(\.rank == searchTerm)
-            }.all()
+        }.all()
     }
     
     func sortedHandler(_ req: Request) throws -> Future<[Honor]> {

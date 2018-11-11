@@ -14,7 +14,7 @@ final class Club: PostgreSQLModel {
     var imageURL: String
     var name: String
     var introduce: String
-    var time: TimeInterval
+    var time: String
     var numbers: Int
     var rank: String
     var type: String
@@ -24,7 +24,7 @@ final class Club: PostgreSQLModel {
     var createdAt: TimeInterval? // 创建时间
     var updatedAt: TimeInterval? // 更新时间
         
-    init(id: Int? = nil, imageURL: String, name: String, introduce: String, time: TimeInterval, numbers: Int, rank: String, type: String, status: Int? = 1) {
+    init(id: Int? = nil, imageURL: String, name: String, introduce: String, time: String, numbers: Int, rank: String, type: String, status: Int? = 1) {
         self.id = id
         self.imageURL = imageURL
         self.name = name

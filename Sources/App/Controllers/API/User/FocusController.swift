@@ -38,6 +38,7 @@ extension FocusController {
     func createHandler(_ req: Request, focus: Focus) throws -> Future<Focus> {
         _ = try req.requireAuthenticated(APIUser.self)
         focus.createdAt = Date().timeIntervalSince1970
+        focus.status = 1
         return focus.save(on: req)
     }
     

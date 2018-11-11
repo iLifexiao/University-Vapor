@@ -38,6 +38,7 @@ extension ADBannerController {
     func createHandler(_ req: Request, adBanner: ADBanner) throws -> Future<ADBanner> {
         _ = try req.requireAuthenticated(APIUser.self)
         adBanner.createdAt = Date().timeIntervalSince1970
+        adBanner.status = 1
         return adBanner.save(on: req)
     }
     

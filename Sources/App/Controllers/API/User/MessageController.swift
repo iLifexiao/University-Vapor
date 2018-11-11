@@ -38,6 +38,7 @@ extension MessageController {
     func createHandler(_ req: Request, message: Message) throws -> Future<Message> {
         _ = try req.requireAuthenticated(APIUser.self)
         message.createdAt = Date().timeIntervalSince1970
+        message.status = 1
         return message.save(on: req)
     }
     

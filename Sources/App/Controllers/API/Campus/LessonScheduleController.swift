@@ -39,6 +39,7 @@ extension LessonScheduleController {
     func createHandler(_ req: Request, lessonSchedule: LessonSchedule) throws -> Future<LessonSchedule> {
         _ = try req.requireAuthenticated(APIUser.self)
         lessonSchedule.createdAt = Date().timeIntervalSince1970
+        lessonSchedule.status = 1
         return lessonSchedule.save(on: req)
     }
     

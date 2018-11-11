@@ -40,6 +40,8 @@ extension CommentController {
     func createHandler(_ req: Request, comment: Comment) throws -> Future<Comment> {
         _ = try req.requireAuthenticated(APIUser.self)
         comment.createdAt = Date().timeIntervalSince1970
+        comment.status = 1
+        comment.likeCount = 0
         return comment.save(on: req)
     }
     

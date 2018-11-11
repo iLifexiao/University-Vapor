@@ -26,6 +26,10 @@ public func routes(_ router: Router) throws {
     let todoController = TodoController()
     try authedRoutes.register(collection: todoController)
     
+    // 注册码
+    let registerCodeComtroller = RegisterCodeController()
+    try authedRoutes.register(collection: registerCodeComtroller)
+    
     // MARK: User
     let userController = UserController()
     let userInfoController = UserInfoController()

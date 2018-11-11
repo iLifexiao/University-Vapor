@@ -41,6 +41,9 @@ extension BookController {
     func createHandler(_ req: Request, book: Book) throws -> Future<Book> {
         _ = try req.requireAuthenticated(APIUser.self)
         book.createdAt = Date().timeIntervalSince1970
+        book.status = 1
+        book.likeCount = 0
+        book.readedCount = 0
         return book.save(on: req)
     }
     

@@ -40,6 +40,9 @@ extension ResourceController {
     func createHandler(_ req: Request, resource: Resource) throws -> Future<Resource> {
         _ = try req.requireAuthenticated(APIUser.self)
         resource.createdAt = Date().timeIntervalSince1970
+        resource.status = 1
+        resource.commentCount = 0
+        resource.likeCount = 0
         return resource.save(on: req)
     }
     

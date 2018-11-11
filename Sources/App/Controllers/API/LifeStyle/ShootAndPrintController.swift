@@ -40,6 +40,7 @@ extension ShootAndPrintController {
     func createHandler(_ req: Request, shootAndPrint: ShootAndPrint) throws -> Future<ShootAndPrint> {
         _ = try req.requireAuthenticated(APIUser.self)
         shootAndPrint.createdAt = Date().timeIntervalSince1970
+        shootAndPrint.status = 1
         return shootAndPrint.save(on: req)
     }
     

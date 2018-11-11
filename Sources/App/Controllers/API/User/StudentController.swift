@@ -40,6 +40,7 @@ extension StudentController {
     
     func createHandler(_ req: Request, student: Student) throws -> Future<Student> {
         _ = try req.requireAuthenticated(APIUser.self)
+        student.createdAt = Date().timeIntervalSince1970
         return student.save(on: req)
     }
     
@@ -55,6 +56,7 @@ extension StudentController {
             stuent.school = newStuent.school
             stuent.major = newStuent.major
             stuent.year = newStuent.year
+            stuent.updatedAt = Date().timeIntervalSince1970
             return stuent.save(on: req)
         }
     }

@@ -40,6 +40,7 @@ extension ClubController {
     func createHandler(_ req: Request, club: Club) throws -> Future<Club> {
         _ = try req.requireAuthenticated(APIUser.self)
         club.createdAt = Date().timeIntervalSince1970
+        club.status = 1
         return club.save(on: req)
     }
     

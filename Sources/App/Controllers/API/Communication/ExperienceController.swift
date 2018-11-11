@@ -11,7 +11,7 @@ import FluentPostgreSQL
 final class ExperienceController: RouteCollection {
     
     func boot(router: Router) throws {
-        let group = router.grouped("api", "v1", "exprience")
+        let group = router.grouped("api", "v1", "experience")
         group.get("all", use: getAllHandler)
         group.get(Experience.parameter, use: getHandler)
         
@@ -39,8 +39,10 @@ extension ExperienceController {
     
     func createHandler(_ req: Request, experience: Experience) throws -> Future<Experience> {
         _ = try req.requireAuthenticated(APIUser.self)
-    
         experience.createdAt = Date().timeIntervalSince1970
+        experience.status = 1
+        experience.likeCount = 0
+        experience.commentCount = 0
         return experience.save(on: req)
     }
     

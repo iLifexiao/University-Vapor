@@ -40,6 +40,7 @@ extension PropertyManagerController {
     func createHandler(_ req: Request, propertyManager: PropertyManager) throws -> Future<PropertyManager> {
         _ = try req.requireAuthenticated(APIUser.self)
         propertyManager.createdAt = Date().timeIntervalSince1970
+        propertyManager.status = 1
         return propertyManager.save(on: req)
     }
     

@@ -40,6 +40,7 @@ extension SpeechController {
     func createHandler(_ req: Request, speech: Speech) throws -> Future<Speech> {
         _ = try req.requireAuthenticated(APIUser.self)
         speech.createdAt = Date().timeIntervalSince1970
+        speech.status = 1
         return speech.save(on: req)
     }
     

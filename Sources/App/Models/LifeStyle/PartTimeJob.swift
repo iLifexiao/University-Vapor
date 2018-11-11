@@ -17,7 +17,7 @@ final class PartTimeJob: PostgreSQLModel {
     var price: Float
     var introduce: String
     var site: String
-    var deadLine: TimeInterval
+    var deadLine: String
     var phone: String
     
     var status: Int? // 状态[0, 1] = [禁止, 正常]
@@ -25,7 +25,7 @@ final class PartTimeJob: PostgreSQLModel {
     var updatedAt: TimeInterval? // 更新时间
     
     
-    init(id: Int? = nil, title: String, imageURL: String, company: String, price: Float, introduce: String, site: String, deadLine: TimeInterval, phone: String, status: Int? = 1) {
+    init(id: Int? = nil, title: String, imageURL: String, company: String, price: Float, introduce: String, site: String, deadLine: String, phone: String, status: Int? = 1) {
         self.id = id
         self.title = title
         self.imageURL = imageURL

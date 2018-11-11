@@ -40,6 +40,7 @@ extension AddressListController {
     func createHandler(_ req: Request, addressList: AddressList) throws -> Future<AddressList> {
         _ = try req.requireAuthenticated(APIUser.self)
         addressList.createdAt = Date().timeIntervalSince1970
+        addressList.status = 1
         return addressList.save(on: req)
     }
     

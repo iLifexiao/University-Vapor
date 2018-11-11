@@ -39,6 +39,7 @@ extension RaceController {
     func createHandler(_ req: Request, race: Race) throws -> Future<Race> {
         _ = try req.requireAuthenticated(APIUser.self)
         race.createdAt = Date().timeIntervalSince1970
+        race.status = 1
         return race.save(on: req)
     }
     

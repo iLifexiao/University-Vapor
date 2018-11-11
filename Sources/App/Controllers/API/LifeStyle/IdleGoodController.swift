@@ -40,6 +40,7 @@ extension IdleGoodController {
     func createHandler(_ req: Request, idleGood: IdleGood) throws -> Future<IdleGood> {
         _ = try req.requireAuthenticated(APIUser.self)
         idleGood.createdAt = Date().timeIntervalSince1970
+        idleGood.status = 1
         return idleGood.save(on: req)
     }
     

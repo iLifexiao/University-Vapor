@@ -40,6 +40,7 @@ extension ExaminationController {
     func createHandler(_ req: Request, examination: Examination) throws -> Future<Examination> {
         _ = try req.requireAuthenticated(APIUser.self)
         examination.createdAt = Date().timeIntervalSince1970
+        examination.status = 1
         return examination.save(on: req)
     }
     

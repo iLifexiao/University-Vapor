@@ -40,6 +40,7 @@ extension PartTimeJobController {
     func createHandler(_ req: Request, partTimeJob: PartTimeJob) throws -> Future<PartTimeJob> {
         _ = try req.requireAuthenticated(APIUser.self)
         partTimeJob.createdAt = Date().timeIntervalSince1970
+        partTimeJob.status = 1
         return partTimeJob.save(on: req)
     }
     

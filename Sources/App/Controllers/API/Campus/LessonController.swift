@@ -40,6 +40,7 @@ extension LessonController {
     func createHandler(_ req: Request, lesson: Lesson) throws -> Future<Lesson> {
         _ = try req.requireAuthenticated(APIUser.self)
         lesson.createdAt = Date().timeIntervalSince1970
+        lesson.status = 1
         return lesson.save(on: req)
     }
     
@@ -75,7 +76,7 @@ extension LessonController {
             or.filter(\.teacher == searchTerm)
             or.filter(\.site == searchTerm)
             or.filter(\.timeInWeek == searchTerm)
-            }.all()
+        }.all()
     }
     
     func sortedHandler(_ req: Request) throws -> Future<[Lesson]> {

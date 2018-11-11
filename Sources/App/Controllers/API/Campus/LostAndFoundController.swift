@@ -40,6 +40,7 @@ extension LostAndFoundController {
     func createHandler(_ req: Request, lostAndFound: LostAndFound) throws -> Future<LostAndFound> {
         _ = try req.requireAuthenticated(APIUser.self)
         lostAndFound.createdAt = Date().timeIntervalSince1970
+        lostAndFound.status = 1
         return lostAndFound.save(on: req)
     }
     

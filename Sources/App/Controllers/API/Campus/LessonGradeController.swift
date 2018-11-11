@@ -40,6 +40,7 @@ extension LessonGradeController {
     func createHandler(_ req: Request, lessonGrade: LessonGrade) throws -> Future<LessonGrade> {
         _ = try req.requireAuthenticated(APIUser.self)
         lessonGrade.createdAt = Date().timeIntervalSince1970
+        lessonGrade.status = 1
         return lessonGrade.save(on: req)
     }
     

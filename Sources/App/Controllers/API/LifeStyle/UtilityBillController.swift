@@ -40,6 +40,7 @@ extension UtilityBillController {
     func createHandler(_ req: Request, utilityBill: UtilityBill) throws -> Future<UtilityBill> {
         _ = try req.requireAuthenticated(APIUser.self)
         utilityBill.createdAt = Date().timeIntervalSince1970
+        utilityBill.status = 1
         return utilityBill.save(on: req)
     }
     

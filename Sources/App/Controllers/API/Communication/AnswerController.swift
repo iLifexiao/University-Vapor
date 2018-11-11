@@ -40,6 +40,9 @@ extension AnswerController {
     func createHandler(_ req: Request, answer: Answer) throws -> Future<Answer> {
         _ = try req.requireAuthenticated(APIUser.self)
         answer.createdAt = Date().timeIntervalSince1970
+        answer.status = 1
+        answer.likeCount = 0
+        answer.commentCount = 0
         return answer.save(on: req)
     }
     

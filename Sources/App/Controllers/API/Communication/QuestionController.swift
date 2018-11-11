@@ -40,6 +40,8 @@ extension QuestionController {
     func createHandler(_ req: Request, question: Question) throws -> Future<Question> {
         _ = try req.requireAuthenticated(APIUser.self)
         question.createdAt = Date().timeIntervalSince1970
+        question.status = 1
+        question.answerCount = 0
         return question.save(on: req)
     }
     

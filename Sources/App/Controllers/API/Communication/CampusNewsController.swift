@@ -40,6 +40,9 @@ extension CampusNewsController {
     func createHandler(_ req: Request, campusNews: CampusNews) throws -> Future<CampusNews> {
         _ = try req.requireAuthenticated(APIUser.self)
         campusNews.createdAt = Date().timeIntervalSince1970
+        campusNews.status = 1
+        campusNews.readCount = 0
+        campusNews.commentCount = 0
         return campusNews.save(on: req)
     }
     

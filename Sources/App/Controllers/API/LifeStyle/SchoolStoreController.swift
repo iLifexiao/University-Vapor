@@ -40,6 +40,7 @@ extension SchoolStoreController {
     func createHandler(_ req: Request, schoolStore: SchoolStore) throws -> Future<SchoolStore> {
         _ = try req.requireAuthenticated(APIUser.self)
         schoolStore.createdAt = Date().timeIntervalSince1970
+        schoolStore.status = 1
         return schoolStore.save(on: req)
     }
     

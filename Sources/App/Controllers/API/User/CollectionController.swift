@@ -38,6 +38,7 @@ extension CollectionController {
     func createHandler(_ req: Request, collection: Collection) throws -> Future<Collection> {
         _ = try req.requireAuthenticated(APIUser.self)
         collection.createdAt = Date().timeIntervalSince1970
+        collection.status = 1
         return collection.save(on: req)
     }
     

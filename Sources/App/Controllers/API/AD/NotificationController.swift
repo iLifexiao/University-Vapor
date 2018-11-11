@@ -19,7 +19,6 @@ final class NotificationController: RouteCollection {
         group.patch(Notification.parameter, use: updateHandler)
         group.delete(Notification.parameter, use: deleteHandler)
         
-        group.get("search", use: searchHandler)
         group.get("sort", use: sortedHandler)
     }
     
@@ -40,6 +39,7 @@ extension NotificationController {
     func createHandler(_ req: Request, notification: Notification) throws -> Future<Notification> {
         _ = try req.requireAuthenticated(APIUser.self)
         notification.createdAt = Date().timeIntervalSince1970
+        notification.status = 1
         return notification.save(on: req)
     }
     
@@ -59,19 +59,6 @@ extension NotificationController {
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(Notification.self).delete(on: req).transform(to: .ok)
-    }
-    
-    // search?term=
-    func searchHandler(_ req: Request) throws -> Future<[Notification]> {
-        _ = try req.requireAuthenticated(APIUser.self)
-        guard let searchTerm = req.query[String.self, at: "term"] else {
-            throw Abort(.badRequest)
-        }
-        return Notification.query(on: req).group(.or) { or in
-            or.filter(\.title == searchTerm)
-            or.filter(\.content == searchTerm)
-            or.filter(\.type == searchTerm)
-            }.all()
     }
         
     func sortedHandler(_ req: Request) throws -> Future<[Notification]> {

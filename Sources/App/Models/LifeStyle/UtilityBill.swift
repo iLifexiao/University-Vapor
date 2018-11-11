@@ -12,7 +12,7 @@ final class UtilityBill: PostgreSQLModel {
     var id: Int?
     
     var site: String
-    var time: TimeInterval
+    var time: String
     var electricityPrice: Float
     var waterPrice: Float
     var hotWaterPrice: Float? // 有的宿舍采用热水器
@@ -23,7 +23,7 @@ final class UtilityBill: PostgreSQLModel {
     var updatedAt: TimeInterval? // 更新时间
     
     
-    init(id: Int? = nil, site: String, time: TimeInterval, electricityPrice: Float, waterPrice: Float, hotWaterPrice: Float?, remark: String?, status: Int? = 1) {
+    init(id: Int? = nil, site: String, time: String, electricityPrice: Float, waterPrice: Float, hotWaterPrice: Float?, remark: String?, status: Int? = 1) {
         self.id = id
         self.site = site
         self.time = time

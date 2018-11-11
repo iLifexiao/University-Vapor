@@ -40,6 +40,7 @@ extension AcademicController {
     func createHandler(_ req: Request, academic: Academic) throws -> Future<Academic> {
         _ = try req.requireAuthenticated(APIUser.self)
         academic.createdAt = Date().timeIntervalSince1970
+        academic.status = 1
         return academic.save(on: req)
     }
     
