@@ -15,7 +15,7 @@ final class LostAndFound: PostgreSQLModel {
     var imageURL: [String]? // 上传 0~9张的图片
     var title: String
     var content: String
-    var time: TimeInterval
+    var time: String
     var site: String
     
     var status: Int? // 状态[0, 1] = [禁止, 正常]
@@ -24,7 +24,7 @@ final class LostAndFound: PostgreSQLModel {
     var updatedAt: TimeInterval? // 更新时间
     
     
-    init(id: Int? = nil, userID: User.ID, imageURL: [String]?, title: String, content: String, time: TimeInterval, site: String, status: Int? = 1, remark: String?) {
+    init(id: Int? = nil, userID: User.ID, imageURL: [String]?, title: String, content: String, time: String, site: String, status: Int? = 1, remark: String?) {
         self.id = id
         self.userID = userID
         self.imageURL = imageURL

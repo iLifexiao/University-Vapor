@@ -13,6 +13,8 @@ final class ADBannerController: RouteCollection {
     func boot(router: Router) throws {
         let group = router.grouped("api", "v1", "adbanner")
         group.get("all", use: getAllHandler)
+        group.get("all", "main", use: getAllMainHandler)
+        group.get("all", "life", use: getAllLifeHandler)
         group.get(ADBanner.parameter, use: getHandler)
         
         group.post(ADBanner.self, use: createHandler)
@@ -33,6 +35,16 @@ extension ADBannerController {
     func getHandler(_ req: Request) throws -> Future<ADBanner> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(ADBanner.self)
+    }
+    
+    func getAllMainHandler(_ req: Request) throws -> Future<[ADBanner]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return ADBanner.query(on: req).filter(\.type == "主页").all()
+    }
+    
+    func getAllLifeHandler(_ req: Request) throws -> Future<[ADBanner]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return ADBanner.query(on: req).filter(\.type == "生活").all()
     }
     
     func createHandler(_ req: Request, adBanner: ADBanner) throws -> Future<ADBanner> {

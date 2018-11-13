@@ -48,6 +48,10 @@ extension Student {
     var lessons: Children<Student, Lesson> {
         return children(\.studentID)
     }
+    // 成绩
+    var grades: Children<Student, LessonGrade> {
+        return children(\.studentID)
+    }
 }
 
 extension Student: PostgreSQLMigration { }

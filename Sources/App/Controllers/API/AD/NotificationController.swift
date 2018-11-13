@@ -13,6 +13,8 @@ final class NotificationController: RouteCollection {
     func boot(router: Router) throws {
         let group = router.grouped("api", "v1", "notification")
         group.get("all", use: getAllHandler)
+        group.get("all", "main", use: getAllMainHandler)
+        group.get("all", "life", use: getAllLifeHandler)
         group.get(Notification.parameter, use: getHandler)
         
         group.post(Notification.self, use: createHandler)
@@ -28,6 +30,16 @@ extension NotificationController {
     func getAllHandler(_ req: Request) throws -> Future<[Notification]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return Notification.query(on: req).all()
+    }
+    
+    func getAllMainHandler(_ req: Request) throws -> Future<[Notification]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return Notification.query(on: req).filter(\.type != "活动").all()
+    }
+    
+    func getAllLifeHandler(_ req: Request) throws -> Future<[Notification]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return Notification.query(on: req).filter(\.type == "活动").all()
     }
     
     // id

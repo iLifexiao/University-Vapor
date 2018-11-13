@@ -35,4 +35,10 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     var migrations = MigrationConfig()
     try migrate(migrations: &migrations)
     services.register(migrations)
+    
+    // 配置端口 ip
+    var nioServerConfig = NIOServerConfig.default()
+    nioServerConfig.hostname = "0.0.0.0"
+//    nioServerConfig.port = 8080
+    services.register(nioServerConfig)
 }

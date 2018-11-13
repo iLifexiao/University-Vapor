@@ -29,6 +29,8 @@ final class UserController: RouteCollection {
         // 用户相关的信息 get
         group.get(User.parameter, "userinfo", use: getUserInfo)
         group.get(User.parameter, "student", use: getStudent)
+        group.get(User.parameter, "student", "lesson", use: getStudentLesson)
+        group.get(User.parameter, "student", "grade", use: getStudentGrade)
         group.get(User.parameter, "focus", use: getFocus)
         group.get(User.parameter, "fans", use: getFans)
         group.get(User.parameter, "collections", use: getCollections)
@@ -178,6 +180,32 @@ extension UserController {
                     throw Abort(HTTPStatus.notFound, reason: "用户还未绑定学号")
                 }
                 return student
+            }
+        }
+    }
+    
+    // 获得用户绑定的学生的课程 /id/student/lesson
+    func getStudentLesson(_ req: Request) throws -> Future<[Lesson]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(User.self).flatMap(to: [Lesson].self) { user in
+            return try user.student.query(on: req).first().flatMap(to: [Lesson].self) { student in
+                guard let student = student else {
+                    throw Abort(HTTPStatus.notFound, reason: "用户还未绑定学号")
+                }
+                return try student.lessons.query(on: req).all()
+            }
+        }
+    }
+    
+    // 获得用户绑定的学生的课程的成绩 /id/student/grade
+    func getStudentGrade(_ req: Request) throws -> Future<[LessonGrade]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(User.self).flatMap(to: [LessonGrade].self) { user in
+            return try user.student.query(on: req).first().flatMap(to: [LessonGrade].self) { student in
+                guard let student = student else {
+                    throw Abort(HTTPStatus.notFound, reason: "用户还未绑定学号")
+                }
+                return try student.grades.query(on: req).all()
             }
         }
     }
