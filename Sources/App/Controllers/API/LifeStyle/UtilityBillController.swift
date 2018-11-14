@@ -70,9 +70,10 @@ extension UtilityBillController {
         guard let searchTerm = req.query[String.self, at: "term"] else {
             throw Abort(.badRequest)
         }
-        return UtilityBill.query(on: req).group(.or) { or in
-            or.filter(\.site == searchTerm)
-        }.all()
+        guard let searchYear = req.query[String.self, at: "year"] else {
+            throw Abort(.badRequest)
+        }
+        return UtilityBill.query(on: req).filter(\.site == searchTerm).filter(\.time == searchYear).all()
     }
     
     func sortedHandler(_ req: Request) throws -> Future<[UtilityBill]> {
