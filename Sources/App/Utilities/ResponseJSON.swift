@@ -57,8 +57,10 @@ enum ResponseStatus:Int, Content {
     case userExist = 20
     case userNotExist = 21
     case accountOrPwdError = 22
+    case passwordError = 23
     
     case registerCodeInvalid = 30
+    case userCodeInvalid = 40
     
     var desc : String {
         switch self {
@@ -76,8 +78,12 @@ enum ResponseStatus:Int, Content {
             return "用户不存在"
         case .accountOrPwdError:
             return "帐号或密码错误"
+        case .passwordError:
+            return "密码错误"
         case .registerCodeInvalid:
             return "注册码无效"
-        }        
+        case .userCodeInvalid:
+            return "修改码无效"
+        }
     }
 }

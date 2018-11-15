@@ -32,6 +32,18 @@ extension User {
         let password: String
         let newPassword: String
     }
+    // 注册帐号密码
+    struct RegisterUser: Content {
+        let account: String
+        let password: String
+        let code: String
+    }
+    // 丢失帐号密码
+    struct LostPwd: Content {
+        let account: String
+        let password: String
+        let code: String
+    }
     // 用户信息1:1
     var userInfo: Children<User, UserInfo> {
         return children(\.userID)

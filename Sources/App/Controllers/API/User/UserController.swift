@@ -22,9 +22,10 @@ final class UserController: RouteCollection {
         group.get("search", use: searchHandler)
         
         // 自动解码json -> model post
-        group.post(User.self, at: "register", use: register)
+        group.post(User.RegisterUser.self, at: "register", use: register)
         group.post(User.self, at: "login", use: login)
         group.post(User.UserNewPwd.self, at: "changepwd", use: changePassword)
+        group.post(User.LostPwd.self, at: "lostpwd", use: lostPassword)
         
         // 用户相关的信息 get
         group.get(User.parameter, "userinfo", use: getUserInfo)
@@ -68,34 +69,52 @@ extension UserController {
     }
     
     // register/
-    func register(_ req: Request, user: User) throws -> Future<Response> {
+    func register(_ req: Request, user: User.RegisterUser) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
+        // 查询用户
         let fetchedUser =  User.query(on: req).filter(\.account == user.account).first()
         return fetchedUser.flatMap { existingUser in
             guard existingUser == nil else {
                 return try ResponseJSON<Empty>(status: .userExist).encode(for: req)
             }
             
-            // 自动加盐的哈希算法，可以通过verify(_:created:)解密
-            let hasher = try req.make(BCryptDigest.self)
-            let passwordHashed = try hasher.hash(user.password)
-            let newUser = User(account: user.account, password: passwordHashed)
-            newUser.createdAt = Date().timeIntervalSince1970 //非Future值，所以用Map
-            
-            // 注册用户的帐号完成后，需要完成用户信息的默认生成
-            return newUser.save(on: req).flatMap{ storedUser in
-                // 生成随机图片
-                let randomInt = try OSRandom().generate(UInt.self)
-                let random0to11 = randomInt % 12 // 生成[0~11]的随机数
-                let randomImage = "/image/" + String(random0to11) + ".jpg"
-                // 用户名称
-                let userName = "用户" + storedUser.account
-                let userInfo = UserInfo(userID: try storedUser.requireID(), nickname: userName, profilephoto: randomImage)
-                userInfo.createdAt = Date().timeIntervalSince1970
-                return userInfo.save(on: req).flatMap { userInfo in
-                    return try ResponseJSON<UserInfo>(message: "用户注册成功", data: userInfo).encode(for: req)
+            let registerCode = RegisterCode.query(on: req).filter(\.code == user.code).first()
+            return registerCode.flatMap { existCode in
+                // 注册码错误
+                guard existCode != nil else {
+                    return try ResponseJSON<Empty>(status: .registerCodeInvalid).encode(for: req)
                 }
-            }
+                // 使用次数耗尽
+                var limitCount = existCode!.usedLimit
+                guard limitCount > 0 else {
+                    return try ResponseJSON<Empty>(status: .registerCodeInvalid).encode(for: req)
+                }
+                // 次数-1
+                limitCount -= 1
+                existCode!.usedLimit = limitCount
+                return existCode!.save(on: req).flatMap { _ in
+                    // 自动加盐的哈希算法，可以通过verify(_:created:)解密
+                    let hasher = try req.make(BCryptDigest.self)
+                    let passwordHashed = try hasher.hash(user.password)
+                    let newUser = User(account: user.account, password: passwordHashed)
+                    newUser.createdAt = Date().timeIntervalSince1970 //转换为非Future值，所以用Map
+                    
+                    // 注册用户的帐号完成后，需要完成用户信息的默认生成
+                    return newUser.save(on: req).flatMap{ storedUser in
+                        // 生成随机图片
+                        let randomInt = try OSRandom().generate(UInt.self)
+                        let random0to11 = randomInt % 12 // 生成[0~11]的随机数
+                        let randomImage = "/image/" + String(random0to11) + ".jpg"
+                        // 用户名称
+                        let userName = "用户" + storedUser.account
+                        let userInfo = UserInfo(userID: try storedUser.requireID(), nickname: userName, profilephoto: randomImage)
+                        userInfo.createdAt = Date().timeIntervalSince1970
+                        return userInfo.save(on: req).flatMap { userInfo in
+                            return try ResponseJSON<UserInfo>(message: "用户注册成功", data: userInfo).encode(for: req)
+                        }
+                    }
+                }
+            }                        
         }
     }
     
@@ -125,24 +144,50 @@ extension UserController {
     
     // 修改密码 changepwd/
     // 通过创建一个单独的结构体，来完成数据上传解析
-    func changePassword(_ req: Request, user: User.UserNewPwd) throws -> Future<HTTPResponse> {
+    func changePassword(_ req: Request, user: User.UserNewPwd) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return User.query(on: req).filter(\.account == user.account).first().flatMap { fetchedUser in
             guard let existingUser = fetchedUser else {
-                throw Abort(HTTPStatus.notFound, reason: "用户不存在")
+                return try ResponseJSON<Empty>(status: .userNotExist).encode(for: req)
             }
             let hasher = try req.make(BCryptDigest.self)
             if try hasher.verify(user.password, created: existingUser.password) {
                 let passwordHashed = try hasher.hash(user.newPassword)
                 existingUser.password = passwordHashed
-                return existingUser.save(on: req).transform(to: HTTPResponse(status: .ok))
+                return existingUser.save(on: req).flatMap { _ in
+                    return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+                }
                 
             } else {
-                throw Abort(HTTPStatus.unauthorized, reason: "原密码错误")
+                return try ResponseJSON<Empty>(status: .passwordError).encode(for: req)
             }
         }
     }
-
+    
+    // lostPassword
+    func lostPassword(_ req: Request, user: User.LostPwd) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return User.query(on: req).filter(\.account == user.account).first().flatMap { fetchedUser in
+            guard let existingUser = fetchedUser else {
+                return try ResponseJSON<Empty>(status: .userNotExist).encode(for: req)
+            }
+            
+            let userCode = UserCode.query(on: req).filter(\.code == user.code).first()
+            return userCode.flatMap { existCode in
+                // 修改码错误
+                guard existCode != nil else {
+                    return try ResponseJSON<Empty>(status: .userCodeInvalid).encode(for: req)
+                }
+                let hasher = try req.make(BCryptDigest.self)
+                let passwordHashed = try hasher.hash(user.password)
+                existingUser.password = passwordHashed
+                                
+                return existingUser.save(on: req).flatMap{ _ in
+                    return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+                }
+            }
+        }
+    }
     
     
     // 通过帐号查找用户

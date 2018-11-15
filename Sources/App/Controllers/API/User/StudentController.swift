@@ -16,6 +16,7 @@ final class StudentController: RouteCollection {
         group.get(Student.parameter, use: getHandler)
         
         group.post(Student.self, use: createHandler)
+        group.post(Student.Account.self, at: "bind", use: bindUserHandler)
         group.patch(Student.parameter, use: updateHandler)
         group.delete(Student.parameter, use: deleteHandler)
         
@@ -42,6 +43,21 @@ extension StudentController {
         _ = try req.requireAuthenticated(APIUser.self)
         student.createdAt = Date().timeIntervalSince1970
         return student.save(on: req)
+    }
+    
+    // 用户绑定学生帐号
+    func bindUserHandler(_ req: Request, student: Student.Account) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return Student.query(on: req).filter(\.number == student.number).filter(\.password == student.password).first().flatMap { stu in
+            // 确保查询成功
+            guard let stu = stu else {
+                return try ResponseJSON<Empty>(status: .error, message: "学生不存在").encode(for: req)
+            }
+            stu.userID = student.userID
+            return stu.save(on: req).flatMap { bindStu in
+                return try ResponseJSON<Student>(status: .ok, message: "绑定成功", data: bindStu).encode(for: req)
+            }
+        }
     }
     
     // id

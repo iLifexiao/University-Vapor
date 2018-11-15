@@ -41,6 +41,13 @@ final class Student: PostgreSQLModel {
 
 // 表示 Student 的父母是 User
 extension Student {
+    // 通过学号-密码绑定（继承Content）
+    struct Account: Content {
+        var userID: Int
+        var number: String
+        var password: String
+    }
+    
     var user: Parent<Student, User> {
         return parent(\.userID)
     }
