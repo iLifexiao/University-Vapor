@@ -34,13 +34,17 @@ final class UserController: RouteCollection {
         group.get(User.parameter, "student", "grade", use: getStudentGrade)
         group.get(User.parameter, "focus", use: getFocus)
         group.get(User.parameter, "fans", use: getFans)
+        group.get(User.parameter, "fans", "count", use: getFansCount)
         group.get(User.parameter, "collections", use: getCollections)
+        group.get(User.parameter, "collections", "count", use: getCollectionsCount)
         group.get(User.parameter, "honors", use: getHonors)
         group.get(User.parameter, "messages", use: getMessages)
+        group.get(User.parameter, "messages", "count", use: getMessagesCount)
         group.get(User.parameter, "sendmessages", use: getSendMessages)
         group.get(User.parameter, "recmessages", use: getRecMessages)
         group.get(User.parameter, "resources", use: getResources)
         group.get(User.parameter, "essays", use: getEssays)
+        group.get(User.parameter, "essays", "count", use: getEssaysCount)
         group.get(User.parameter, "books", use: getBooks)
         group.get(User.parameter, "questions", use: getQuestions)
         group.get(User.parameter, "answers", use: getAnswers)
@@ -256,19 +260,45 @@ extension UserController {
     }
     
     // 1:m的则可以使用以下方法
-    // 获得我的好友 /id/focus
-    func getFocus(_ req: Request) throws -> Future<[Focus]> {
+    // 获得我的好友(我关注的) /id/focus
+    func getFocus(_ req: Request) throws -> Future<[UserInfo]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return try req.parameters.next(User.self).flatMap(to: [Focus].self) { user in
-            try user.focus.query(on: req).all()
+        return try req.parameters.next(User.self).flatMap { user in
+            try user.focus.query(on: req).all().flatMap(to: [UserInfo].self) { friends in
+                // 等待获取到所有的值
+                var userInfos: [Future<UserInfo>] = []
+                for friend in friends {
+                    userInfos.append(UserInfo.query(on: req).filter(\.userID == friend.focusUserID).first().unwrap(or: Abort(HTTPStatus.notFound)))
+                }
+                return userInfos.flatten(on: req)
+            }
         }
     }
     
-    // 获得我的粉丝 /id/fans
-    func getFans(_ req: Request) throws -> Future<[Focus]> {
+    // 获得我的粉丝（关注我的） /id/fans
+    func getFans(_ req: Request) throws -> Future<[UserInfo]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return try req.parameters.next(User.self).flatMap(to: [Focus].self) { user in
-            try user.fans.query(on: req).all()
+        return try req.parameters.next(User.self).flatMap { user in
+            return try user.fans.query(on: req).all().flatMap(to: [UserInfo].self) { fans in
+                // 等待获取到所有的值
+                var userInfos: [Future<UserInfo>] = []
+                for fan in fans {
+                    // 解包
+                    userInfos.append(UserInfo.query(on: req).filter(\.userID == fan.userID).first().unwrap(or: Abort(HTTPStatus.notFound)))
+                }
+                return userInfos.flatten(on: req)
+            }
+        }
+    }
+    
+    // 获得我的粉丝数量（关注我的） /id/fans/count
+    func getFansCount(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(User.self).flatMap { user in
+            return try user.fans.query(on: req).all().flatMap { fans in
+                let info = InfoCount(key: "fans", value: fans.count)
+                return try ResponseJSON<InfoCount>(data: info).encode(for: req)
+            }
         }
     }
     
@@ -277,6 +307,17 @@ extension UserController {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Collection].self) { user in
             try user.collections.query(on: req).all()
+        }
+    }
+    
+    // 获得我的收藏数量 /id/collections/count
+    func getCollectionsCount(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(User.self).flatMap { user in
+            try user.collections.query(on: req).all().flatMap { collections in
+                let info = InfoCount(key: "collections", value: collections.count)
+                return try ResponseJSON<InfoCount>(data: info).encode(for: req)
+            }
         }
     }
     
@@ -296,11 +337,23 @@ extension UserController {
         }
     }
     
+    // 获得我的信息数量 /id/messages/count
+    func getMessagesCount(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(User.self).flatMap { user in
+            try user.messages.query(on: req).all().flatMap { messages in
+                let info = InfoCount(key: "messages", value: messages.count)
+                return try ResponseJSON<InfoCount>(data: info).encode(for: req)
+            }
+        }
+    }
+
+    
     // 获得我的已发信息 /id/sendmessages
     func getSendMessages(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Message].self) { user in
-            try user.sendMessages.query(on: req).all()
+            try user.sendMessages.query(on: req).filter(\.userID == user.id!).all()
         }
     }
     
@@ -325,6 +378,17 @@ extension UserController {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Essay].self) { user in
             try user.essays.query(on: req).all()
+        }
+    }
+    
+    // 获得我的文章的数量 /id/essays/count
+    func getEssaysCount(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(User.self).flatMap { user in
+            try user.essays.query(on: req).all().flatMap(to: Response.self) { essays in
+                let info = InfoCount(key: "essays", value: essays.count)
+                return try ResponseJSON<InfoCount>(data: info).encode(for: req)
+            }
         }
     }
     

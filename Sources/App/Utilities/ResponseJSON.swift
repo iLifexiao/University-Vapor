@@ -10,6 +10,11 @@ import Vapor
 // 返回Data为空时使用
 struct Empty: Content {}
 
+struct InfoCount: Content {
+    var key: String
+    var value: Int
+}
+
 // 用于格式化JSON输出
 struct ResponseJSON<T: Content>: Content {
     
