@@ -10,6 +10,7 @@ import Vapor
 // 返回Data为空时使用
 struct Empty: Content {}
 
+// 查询表的元组个数
 struct InfoCount: Content {
     var key: String
     var value: Int
@@ -28,21 +29,21 @@ struct ResponseJSON<T: Content>: Content {
         self.data = data
     }
     
-    init(status:ResponseStatus = .ok) {
+    init(status: ResponseStatus = .ok) {
         self.status = status
         self.message = status.desc
         self.data = nil
     }
     
     
-    init(status:ResponseStatus = .ok,
+    init(status: ResponseStatus = .ok,
          message: String = ResponseStatus.ok.desc) {
         self.status = status
         self.message = message
         self.data = nil
     }
     
-    init(status:ResponseStatus = .ok,
+    init(status: ResponseStatus = .ok,
          message: String = ResponseStatus.ok.desc,
          data: T?) {
         self.status = status

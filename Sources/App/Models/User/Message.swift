@@ -33,6 +33,14 @@ final class Message: PostgreSQLModel {
 }
 
 extension Message {
+    // 发送信息的格式
+    struct SendAccount: Content {
+        var userID: Int
+        var account: String
+        var content: String
+        var type: String
+    }
+    
     var user: Parent<Message, User> {
         return parent(\.userID)
     }
