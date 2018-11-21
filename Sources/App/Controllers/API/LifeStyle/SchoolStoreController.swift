@@ -28,7 +28,7 @@ final class SchoolStoreController: RouteCollection {
 extension SchoolStoreController {
     func getAllHandler(_ req: Request) throws -> Future<[SchoolStore]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return SchoolStore.query(on: req).all()
+        return SchoolStore.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -79,11 +79,12 @@ extension SchoolStoreController {
             or.filter(\.type == searchTerm)
             or.filter(\.site == searchTerm)
             or.filter(\.phone == searchTerm)
+            or.filter(\.status != 0)
         }.all()
     }
     
     func sortedHandler(_ req: Request) throws -> Future<[SchoolStore]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return SchoolStore.query(on: req).sort(\.createdAt, .ascending).all()
+        return SchoolStore.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

@@ -16,7 +16,12 @@ final class EssayController: RouteCollection {
         group.get(Essay.parameter, use: getHandler)
         
         group.post(Essay.self, use: createHandler)
+        
+        group.patch(Essay.parameter, "logicdel", use: logicdelHandler)
         group.patch(Essay.parameter, use: updateHandler)
+        group.patch(Essay.parameter, "unlike", use: decreaseLikeHandler)
+        group.patch(Essay.parameter, "like", use: increaseLikeHandler)
+        group.patch(Essay.parameter, "read", use: increaseReadHandler)
         group.delete(Essay.parameter, use: deleteHandler)
         
         group.get("search", use: searchHandler)
@@ -28,7 +33,7 @@ final class EssayController: RouteCollection {
 extension EssayController {
     func getAllHandler(_ req: Request) throws -> Future<[Essay]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Essay.query(on: req).all()
+        return Essay.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -47,6 +52,21 @@ extension EssayController {
         return essay.save(on: req)
     }
     
+    // 逻辑删除（status = 0）/id/logicdel
+    func logicdelHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Essay.self).flatMap { essay in
+            guard essay.status != 0 else {
+                return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
+            }
+            essay.status = 0
+            essay.updatedAt = Date().timeIntervalSince1970
+            return essay.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
+    }
+    
     // id
     func updateHandler(_ req: Request) throws -> Future<Essay> {
         _ = try req.requireAuthenticated(APIUser.self)
@@ -56,6 +76,45 @@ extension EssayController {
             essay.type = newEssay.type
             essay.updatedAt = Date().timeIntervalSince1970
             return essay.save(on: req)
+        }
+    }
+    
+    // /id/like
+    func increaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Essay.self).flatMap { essay in
+            var likeCount = essay.likeCount ?? 0
+            likeCount += 1
+            essay.likeCount = likeCount
+            return essay.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/unlike
+    func decreaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Essay.self).flatMap { essay in
+            var likeCount = essay.likeCount ?? 0
+            likeCount -= 1
+            essay.likeCount = likeCount
+            return essay.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/read
+    func increaseReadHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Essay.self).flatMap { essay in
+            var readCount = essay.readCount ?? 0
+            readCount += 1
+            essay.readCount = readCount
+            return essay.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
         }
     }
     
@@ -74,11 +133,13 @@ extension EssayController {
         return Essay.query(on: req).group(.or) { or in
             or.filter(\.title == searchTerm)            
             or.filter(\.type == searchTerm)
+            or.filter(\.status != 0)
         }.all()
     }
     
+    // 修改文章信息的方式（倒序、排除禁止的文章）
     func sortedHandler(_ req: Request) throws -> Future<[Essay]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Essay.query(on: req).sort(\.createdAt, .ascending).all()
+        return Essay.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

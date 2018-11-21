@@ -16,6 +16,8 @@ final class HonorController: RouteCollection {
         group.get(Honor.parameter, use: getHandler)
         
         group.post(Honor.self, use: createHandler)
+        
+        group.patch(Honor.parameter, "logicdel", use: logicdelHandler)
         group.patch(Honor.parameter, use: updateHandler)
         group.delete(Honor.parameter, use: deleteHandler)
         
@@ -27,7 +29,7 @@ final class HonorController: RouteCollection {
 extension HonorController {
     func getAllHandler(_ req: Request) throws -> Future<[Honor]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Honor.query(on: req).all()
+        return Honor.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -41,6 +43,21 @@ extension HonorController {
         honor.createdAt = Date().timeIntervalSince1970
         honor.status = 1
         return honor.save(on: req)
+    }
+    
+    // 逻辑删除（status = 0）/id/logicdel
+    func logicdelHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Honor.self).flatMap { honor in
+            guard honor.status != 0 else {
+                return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
+            }
+            honor.status = 0
+            honor.updatedAt = Date().timeIntervalSince1970
+            return honor.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
     }
     
     // id
@@ -75,7 +92,7 @@ extension HonorController {
     
     func sortedHandler(_ req: Request) throws -> Future<[Honor]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Honor.query(on: req).sort(\.time, .ascending).all()
+        return Honor.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }
 

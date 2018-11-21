@@ -28,7 +28,7 @@ final class ADBannerController: RouteCollection {
 extension ADBannerController {
     func getAllHandler(_ req: Request) throws -> Future<[ADBanner]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return ADBanner.query(on: req).all()
+        return ADBanner.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -39,12 +39,12 @@ extension ADBannerController {
     
     func getAllMainHandler(_ req: Request) throws -> Future<[ADBanner]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return ADBanner.query(on: req).filter(\.type == "主页").all()
+        return ADBanner.query(on: req).filter(\.type == "主页").filter(\.status != 0).all()
     }
     
     func getAllLifeHandler(_ req: Request) throws -> Future<[ADBanner]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return ADBanner.query(on: req).filter(\.type == "生活").all()
+        return ADBanner.query(on: req).filter(\.type == "生活").filter(\.status != 0).all()
     }
     
     func createHandler(_ req: Request, adBanner: ADBanner) throws -> Future<ADBanner> {

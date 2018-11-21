@@ -16,6 +16,8 @@ final class ResourceController: RouteCollection {
         group.get(Resource.parameter, use: getHandler)
         
         group.post(Resource.self, use: createHandler)
+        
+        group.patch(Resource.parameter, "logicdel", use: logicdelHandler)
         group.patch(Resource.parameter, use: updateHandler)
         group.delete(Resource.parameter, use: deleteHandler)
         
@@ -28,7 +30,7 @@ final class ResourceController: RouteCollection {
 extension ResourceController {
     func getAllHandler(_ req: Request) throws -> Future<[Resource]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Resource.query(on: req).all()
+        return Resource.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -44,6 +46,21 @@ extension ResourceController {
         resource.commentCount = 0
         resource.likeCount = 0
         return resource.save(on: req)
+    }
+    
+    // 逻辑删除（status = 0）/id/logicdel
+    func logicdelHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Resource.self).flatMap { resource in
+            guard resource.status != 0 else {
+                return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
+            }
+            resource.status = 0
+            resource.updatedAt = Date().timeIntervalSince1970
+            return resource.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
     }
     
     // id
@@ -74,11 +91,12 @@ extension ResourceController {
         return Resource.query(on: req).group(.or) { or in
             or.filter(\.name == searchTerm)
             or.filter(\.type == searchTerm)
+            or.filter(\.status != 0)
         }.all()
     }
     
     func sortedHandler(_ req: Request) throws -> Future<[Resource]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Resource.query(on: req).sort(\.createdAt, .ascending).all()
+        return Resource.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

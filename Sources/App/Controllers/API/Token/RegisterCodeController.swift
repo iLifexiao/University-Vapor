@@ -86,7 +86,7 @@ extension RegisterCodeController {
         guard let code = req.query[String.self, at: "code"] else {
             throw Abort(.badRequest)
         }
-        let registerCode = RegisterCode.query(on: req).filter(\.code == code).first()
+        let registerCode = RegisterCode.query(on: req).filter(\.code == code).filter(\.status != 0).first()
         return registerCode.flatMap { existCode in
             // 注册码错误
             guard existCode != nil else {

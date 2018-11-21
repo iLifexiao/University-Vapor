@@ -28,7 +28,7 @@ final class ShootAndPrintController: RouteCollection {
 extension ShootAndPrintController {
     func getAllHandler(_ req: Request) throws -> Future<[ShootAndPrint]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return ShootAndPrint.query(on: req).all()
+        return ShootAndPrint.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -82,11 +82,12 @@ extension ShootAndPrintController {
             or.filter(\.phone == searchTerm)
             or.filter(\.wechat == searchTerm)
             or.filter(\.qq == searchTerm)
+            or.filter(\.status != 0)
             }.all()
     }
     
     func sortedHandler(_ req: Request) throws -> Future<[ShootAndPrint]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return ShootAndPrint.query(on: req).sort(\.createdAt, .ascending).all()
+        return ShootAndPrint.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

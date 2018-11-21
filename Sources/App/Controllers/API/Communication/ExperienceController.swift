@@ -16,6 +16,8 @@ final class ExperienceController: RouteCollection {
         group.get(Experience.parameter, use: getHandler)
         
         group.post(Experience.self, use: createHandler)
+        
+        group.patch(Experience.parameter, "logicdel", use: logicdelHandler)
         group.patch(Experience.parameter, use: updateHandler)
         group.delete(Experience.parameter, use: deleteHandler)
         
@@ -28,7 +30,7 @@ final class ExperienceController: RouteCollection {
 extension ExperienceController {
     func getAllHandler(_ req: Request) throws -> Future<[Experience]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Experience.query(on: req).all()
+        return Experience.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -44,6 +46,21 @@ extension ExperienceController {
         experience.likeCount = 0
         experience.commentCount = 0
         return experience.save(on: req)
+    }
+    
+    // 逻辑删除（status = 0）/id/logicdel
+    func logicdelHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Experience.self).flatMap { experience in
+            guard experience.status != 0 else {
+                return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
+            }
+            experience.status = 0
+            experience.updatedAt = Date().timeIntervalSince1970
+            return experience.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
     }
     
     // id
@@ -73,11 +90,12 @@ extension ExperienceController {
         return Experience.query(on: req).group(.or) { or in
             or.filter(\.title == searchTerm)
             or.filter(\.type == searchTerm)
+            or.filter(\.status != 0)
         }.all()
     }
     
     func sortedHandler(_ req: Request) throws -> Future<[Experience]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Experience.query(on: req).sort(\.createdAt, .ascending).all()
+        return Experience.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

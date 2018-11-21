@@ -28,7 +28,7 @@ final class SpeechController: RouteCollection {
 extension SpeechController {
     func getAllHandler(_ req: Request) throws -> Future<[Speech]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Speech.query(on: req).all()
+        return Speech.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -79,7 +79,7 @@ extension SpeechController {
     
     func sortedHandler(_ req: Request) throws -> Future<[Speech]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Speech.query(on: req).sort(\.createdAt, .ascending).all()
+        return Speech.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }
 

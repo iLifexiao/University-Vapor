@@ -132,6 +132,11 @@ extension UserController {
                 return try ResponseJSON<Empty>(status: .userNotExist).encode(for: req)
             }
             
+            // 检查用户状态，禁止用户登录
+            guard existingUser.status != 0 else {
+                return try ResponseJSON<Empty>(status: .error, message: "用户被禁止登录").encode(for: req)
+            }
+            
             // 解码password
             let hasher = try req.make(BCryptDigest.self)
             // 解码成功
@@ -295,7 +300,7 @@ extension UserController {
     func getFansCount(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap { user in
-            return try user.fans.query(on: req).all().flatMap { fans in
+            return try user.fans.query(on: req).filter(\.status != 0).all().flatMap { fans in
                 let info = InfoCount(key: "fans", value: fans.count)
                 return try ResponseJSON<InfoCount>(data: info).encode(for: req)
             }
@@ -306,7 +311,7 @@ extension UserController {
     func getCollections(_ req: Request) throws -> Future<[Collection]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Collection].self) { user in
-            try user.collections.query(on: req).all()
+            try user.collections.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -314,7 +319,7 @@ extension UserController {
     func getCollectionsCount(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap { user in
-            try user.collections.query(on: req).all().flatMap { collections in
+            try user.collections.query(on: req).filter(\.status != 0).all().flatMap { collections in
                 let info = InfoCount(key: "collections", value: collections.count)
                 return try ResponseJSON<InfoCount>(data: info).encode(for: req)
             }
@@ -325,7 +330,7 @@ extension UserController {
     func getHonors(_ req: Request) throws -> Future<[Honor]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Honor].self) { user in
-            try user.honors.query(on: req).all()
+            try user.honors.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -333,7 +338,7 @@ extension UserController {
     func getMessages(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Message].self) { user in
-            try user.messages.query(on: req).all()
+            try user.messages.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -341,7 +346,7 @@ extension UserController {
     func getMessagesCount(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap { user in
-            try user.messages.query(on: req).all().flatMap { messages in
+            try user.messages.query(on: req).filter(\.status != 0).all().flatMap { messages in
                 let info = InfoCount(key: "messages", value: messages.count)
                 return try ResponseJSON<InfoCount>(data: info).encode(for: req)
             }
@@ -353,7 +358,7 @@ extension UserController {
     func getSendMessages(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Message].self) { user in
-            try user.sendMessages.query(on: req).filter(\.userID == user.id!).all()
+            try user.sendMessages.query(on: req).filter(\.userID == user.id!).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -361,7 +366,7 @@ extension UserController {
     func getRecMessages(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Message].self) { user in
-            try user.recMessages.query(on: req).all()
+            try user.recMessages.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -369,15 +374,15 @@ extension UserController {
     func getResources(_ req: Request) throws -> Future<[Resource]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Resource].self) { user in
-            try user.resources.query(on: req).all()
+            try user.resources.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
-    // 获得我的文章 /id/essays
+    // 获得我的文章(倒序) /id/essays
     func getEssays(_ req: Request) throws -> Future<[Essay]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Essay].self) { user in
-            try user.essays.query(on: req).all()
+            try user.essays.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -385,7 +390,7 @@ extension UserController {
     func getEssaysCount(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap { user in
-            try user.essays.query(on: req).all().flatMap(to: Response.self) { essays in
+            try user.essays.query(on: req).filter(\.status != 0).all().flatMap(to: Response.self) { essays in
                 let info = InfoCount(key: "essays", value: essays.count)
                 return try ResponseJSON<InfoCount>(data: info).encode(for: req)
             }
@@ -396,7 +401,7 @@ extension UserController {
     func getBooks(_ req: Request) throws -> Future<[Book]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Book].self) { user in
-            try user.books.query(on: req).all()
+            try user.books.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -404,7 +409,7 @@ extension UserController {
     func getQuestions(_ req: Request) throws -> Future<[Question]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Question].self) { user in
-            try user.questions.query(on: req).all()
+            try user.questions.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -412,7 +417,7 @@ extension UserController {
     func getAnswers(_ req: Request) throws -> Future<[Answer]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Answer].self) { user in
-            try user.answers.query(on: req).all()
+            try user.answers.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -420,7 +425,7 @@ extension UserController {
     func getExperiences(_ req: Request) throws -> Future<[Experience]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Experience].self) { user in
-            try user.experiences.query(on: req).all()
+            try user.experiences.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -428,7 +433,7 @@ extension UserController {
     func getComments(_ req: Request) throws -> Future<[Comment]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Comment].self) { user in
-            try user.comments.query(on: req).all()
+            try user.comments.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -436,7 +441,7 @@ extension UserController {
     func getLostAndFounds(_ req: Request) throws -> Future<[LostAndFound]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [LostAndFound].self) { user in
-            try user.lostAndFounds.query(on: req).all()
+            try user.lostAndFounds.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -444,7 +449,7 @@ extension UserController {
     func getIdleGoods(_ req: Request) throws -> Future<[IdleGood]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [IdleGood].self) { user in
-            try user.idleGoods.query(on: req).all()
+            try user.idleGoods.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
         }
     }
 }

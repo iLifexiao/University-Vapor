@@ -28,7 +28,7 @@ final class IdleGoodController: RouteCollection {
 extension IdleGoodController {
     func getAllHandler(_ req: Request) throws -> Future<[IdleGood]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return IdleGood.query(on: req).all()
+        return IdleGood.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -42,6 +42,21 @@ extension IdleGoodController {
         idleGood.createdAt = Date().timeIntervalSince1970
         idleGood.status = 1
         return idleGood.save(on: req)
+    }
+    
+    // 逻辑删除（status = 0）/id/logicdel
+    func logicdelHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(IdleGood.self).flatMap { idleGood in
+            guard idleGood.status != 0 else {
+                return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
+            }
+            idleGood.status = 0
+            idleGood.updatedAt = Date().timeIntervalSince1970
+            return idleGood.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
     }
     
     // id
@@ -74,12 +89,13 @@ extension IdleGoodController {
         return IdleGood.query(on: req).group(.or) { or in
             or.filter(\.title == searchTerm)            
             or.filter(\.type == searchTerm)
+            or.filter(\.status != 0)
         }.all()
     }
     
     
     func sortedHandler(_ req: Request) throws -> Future<[IdleGood]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return IdleGood.query(on: req).sort(\.createdAt, .ascending).all()
+        return IdleGood.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

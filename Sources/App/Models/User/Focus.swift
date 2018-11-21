@@ -25,6 +25,11 @@ final class Focus: PostgreSQLModel {
 }
 
 extension Focus {
+    struct Account: Content {
+        var userID: Int
+        var account: String
+    }
+    
     var user: Parent<Focus, User> {
         return parent(\.userID)
     }

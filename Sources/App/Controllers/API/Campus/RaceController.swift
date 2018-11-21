@@ -27,7 +27,7 @@ final class RaceController: RouteCollection {
 extension RaceController {
     func getAllHandler(_ req: Request) throws -> Future<[Race]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Race.query(on: req).all()
+        return Race.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -77,7 +77,7 @@ extension RaceController {
     
     func sortedHandler(_ req: Request) throws -> Future<[Race]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Race.query(on: req).sort(\.createdAt, .ascending).all()
+        return Race.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }
 

@@ -16,6 +16,8 @@ final class QuestionController: RouteCollection {
         group.get(Question.parameter, use: getHandler)
         
         group.post(Question.self, use: createHandler)
+        
+        group.patch(Question.parameter, "logicdel", use: logicdelHandler)
         group.patch(Question.parameter, use: updateHandler)
         group.delete(Question.parameter, use: deleteHandler)
         
@@ -28,7 +30,7 @@ final class QuestionController: RouteCollection {
 extension QuestionController {
     func getAllHandler(_ req: Request) throws -> Future<[Question]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Question.query(on: req).all()
+        return Question.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -43,6 +45,21 @@ extension QuestionController {
         question.status = 1
         question.answerCount = 0
         return question.save(on: req)
+    }
+    
+    // 逻辑删除（status = 0）/id/logicdel
+    func logicdelHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Question.self).flatMap { question in
+            guard question.status != 0 else {
+                return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
+            }
+            question.status = 0
+            question.updatedAt = Date().timeIntervalSince1970
+            return question.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
     }
     
     // id
@@ -73,11 +90,12 @@ extension QuestionController {
             or.filter(\.title == searchTerm)
             or.filter(\.type == searchTerm)
             or.filter(\.from == searchTerm)
+            or.filter(\.status != 0)
             }.all()
     }
     
     func sortedHandler(_ req: Request) throws -> Future<[Question]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Question.query(on: req).sort(\.createdAt, .ascending).all()
+        return Question.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

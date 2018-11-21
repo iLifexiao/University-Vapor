@@ -29,17 +29,17 @@ final class NotificationController: RouteCollection {
 extension NotificationController {
     func getAllHandler(_ req: Request) throws -> Future<[Notification]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Notification.query(on: req).all()
+        return Notification.query(on: req).filter(\.status != 0).all()
     }
     
     func getAllMainHandler(_ req: Request) throws -> Future<[Notification]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Notification.query(on: req).filter(\.type != "活动").all()
+        return Notification.query(on: req).filter(\.type != "活动").filter(\.status != 0).all()
     }
     
     func getAllLifeHandler(_ req: Request) throws -> Future<[Notification]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Notification.query(on: req).filter(\.type == "活动").all()
+        return Notification.query(on: req).filter(\.type == "活动").filter(\.status != 0).all()
     }
     
     // id
@@ -75,6 +75,6 @@ extension NotificationController {
         
     func sortedHandler(_ req: Request) throws -> Future<[Notification]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Notification.query(on: req).sort(\.createdAt, .ascending).all()
+        return Notification.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

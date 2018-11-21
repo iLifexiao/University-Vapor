@@ -16,6 +16,8 @@ final class BookController: RouteCollection {
         group.get(Book.parameter, use: getHandler)
         
         group.post(Book.self, use: createHandler)
+        
+        group.patch(Book.parameter, "logicdel", use: logicdelHandler)
         group.patch(Book.parameter, use: updateHandler)
         group.delete(Book.parameter, use: deleteHandler)
         
@@ -29,7 +31,7 @@ final class BookController: RouteCollection {
 extension BookController {
     func getAllHandler(_ req: Request) throws -> Future<[Book]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Book.query(on: req).all()
+        return Book.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -45,6 +47,21 @@ extension BookController {
         book.likeCount = 0
         book.readedCount = 0
         return book.save(on: req)
+    }
+    
+    // 逻辑删除（status = 0）/id/logicdel
+    func logicdelHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Book.self).flatMap { book in
+            guard book.status != 0 else {
+                return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
+            }
+            book.status = 0
+            book.updatedAt = Date().timeIntervalSince1970
+            return book.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
     }
     
     // id
@@ -78,6 +95,7 @@ extension BookController {
             or.filter(\.name == searchTerm)
             or.filter(\.type == searchTerm)
             or.filter(\.author == searchTerm)
+            or.filter(\.status != 0)
             }.all()
     }
     
@@ -93,6 +111,6 @@ extension BookController {
     
     func sortedHandler(_ req: Request) throws -> Future<[Book]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Book.query(on: req).sort(\.createdAt, .ascending).all()
+        return Book.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

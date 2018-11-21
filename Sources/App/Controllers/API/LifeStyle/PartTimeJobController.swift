@@ -28,7 +28,7 @@ final class PartTimeJobController: RouteCollection {
 extension PartTimeJobController {
     func getAllHandler(_ req: Request) throws -> Future<[PartTimeJob]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return PartTimeJob.query(on: req).all()
+        return PartTimeJob.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -79,11 +79,12 @@ extension PartTimeJobController {
             or.filter(\.introduce == searchTerm)
             or.filter(\.site == searchTerm)
             or.filter(\.phone == searchTerm)
+            or.filter(\.status != 0)
         }.all()
     }
     
     func sortedHandler(_ req: Request) throws -> Future<[PartTimeJob]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return PartTimeJob.query(on: req).sort(\.createdAt, .ascending).all()
+        return PartTimeJob.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

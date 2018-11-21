@@ -16,11 +16,16 @@ final class CommentController: RouteCollection {
         group.get(Comment.parameter, use: getHandler)
         
         group.post(Comment.self, use: createHandler)
+        
+        group.patch(Comment.parameter, "logicdel", use: logicdelHandler)
+        group.patch(Comment.parameter, "unlike", use: decreaseLikeHandler)
+        group.patch(Comment.parameter, "like", use: increaseLikeHandler)
         group.patch(Comment.parameter, use: updateHandler)
         group.delete(Comment.parameter, use: deleteHandler)
         
         group.get("search", use: searchHandler)        
         group.get("sort", use: sortedHandler)
+        group.get("type", use: getAllTypeHandler)
     }
     
 }
@@ -28,7 +33,7 @@ final class CommentController: RouteCollection {
 extension CommentController {
     func getAllHandler(_ req: Request) throws -> Future<[Comment]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Comment.query(on: req).all()
+        return Comment.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -45,6 +50,21 @@ extension CommentController {
         return comment.save(on: req)
     }
     
+    // 逻辑删除（status = 0）/id/logicdel
+    func logicdelHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Comment.self).flatMap { comment in
+            guard comment.status != 0 else {
+                return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
+            }
+            comment.status = 0
+            comment.updatedAt = Date().timeIntervalSince1970
+            return comment.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
+    }
+    
     // id
     func updateHandler(_ req: Request) throws -> Future<Comment> {
         _ = try req.requireAuthenticated(APIUser.self)
@@ -52,6 +72,32 @@ extension CommentController {
             comment.content = newComment.content
             comment.updatedAt = Date().timeIntervalSince1970
             return comment.save(on: req)
+        }
+    }
+    
+    // /id/like
+    func increaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Comment.self).flatMap { comment in
+            var likeCount = comment.likeCount ?? 0
+            likeCount += 1
+            comment.likeCount = likeCount
+            return comment.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/unlike
+    func decreaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Comment.self).flatMap { comment in
+            var likeCount = comment.likeCount ?? 0
+            likeCount -= 1
+            comment.likeCount = likeCount
+            return comment.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
         }
     }
     
@@ -69,11 +115,25 @@ extension CommentController {
         }
         return Comment.query(on: req).group(.or) { or in
             or.filter(\.content == searchTerm)
+            or.filter(\.status != 0)
         }.all()
     }
-
+    
     func sortedHandler(_ req: Request) throws -> Future<[Comment]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Comment.query(on: req).sort(\.createdAt, .ascending).all()
+        return Comment.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
+    }
+
+    // type?term=?&id=?
+    func getAllTypeHandler(_ req: Request) throws -> Future<[Comment]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let type = req.query[String.self, at: "term"] else {
+            throw Abort(.badRequest)
+        }
+        guard let commentID = req.query[Int.self, at: "id"] else {
+            throw Abort(.badRequest)
+        }
+        // 通过类型 和 ID 唯一确定评论
+        return Comment.query(on: req).filter(\.status != 0).filter(\.type == type).filter(\.commentID == commentID).sort(\.createdAt, .descending).all()
     }
 }

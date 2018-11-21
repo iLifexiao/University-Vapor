@@ -28,7 +28,7 @@ final class ClubController: RouteCollection {
 extension ClubController {
     func getAllHandler(_ req: Request) throws -> Future<[Club]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Club.query(on: req).all()
+        return Club.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -81,7 +81,7 @@ extension ClubController {
     
     func sortedHandler(_ req: Request) throws -> Future<[Club]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Club.query(on: req).sort(\.createdAt, .ascending).all()
+        return Club.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }
 

@@ -16,6 +16,7 @@ final class MessageController: RouteCollection {
         group.get(Message.parameter, use: getHandler)
         
         group.post(Message.self, use: createHandler)
+        group.post(Message.self, at: "two", use: createHandlerTwo)
         group.post(Message.SendAccount.self, at: "account", use: sendMsgByAccount)
         group.delete(Message.parameter, use: deleteHandler)
         
@@ -27,7 +28,7 @@ final class MessageController: RouteCollection {
 extension MessageController {
     func getAllHandler(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Message.query(on: req).all()
+        return Message.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -41,6 +42,26 @@ extension MessageController {
         message.createdAt = Date().timeIntervalSince1970
         message.status = 1
         return message.save(on: req)
+    }
+    
+    // 点击用户发送私信 /message/two
+    func createHandlerTwo(_ req: Request, message: Message) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        message.createdAt = Date().timeIntervalSince1970
+        message.status = 1
+        
+        // 第二条信息
+        let msg2 = Message(userID: message.friendID, friendID: message.userID, fromUserID: message.fromUserID, toUserID: message.toUserID, content: message.content)
+        msg2.createdAt = message.createdAt
+        msg2.status = 1
+        
+        return req.transaction(on: .psql) { conn in
+            message.save(on: conn).flatMap { _ in
+                return msg2.save(on: conn)
+                }.flatMap { _ in
+                    return try ResponseJSON<Empty>(status: .ok, message: "私信发送成功").encode(for: req)
+            }
+        }
     }
     
     // message/account
@@ -87,7 +108,7 @@ extension MessageController {
     
     func sortedHandler(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Message.query(on: req).sort(\.createdAt, .ascending).all()
+        return Message.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }
 

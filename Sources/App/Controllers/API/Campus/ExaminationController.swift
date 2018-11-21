@@ -28,7 +28,7 @@ final class ExaminationController: RouteCollection {
 extension ExaminationController {
     func getAllHandler(_ req: Request) throws -> Future<[Examination]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Examination.query(on: req).all()
+        return Examination.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -83,7 +83,7 @@ extension ExaminationController {
     
     func sortedHandler(_ req: Request) throws -> Future<[Examination]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Examination.query(on: req).sort(\.createdAt, .ascending).all()
+        return Examination.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }
 

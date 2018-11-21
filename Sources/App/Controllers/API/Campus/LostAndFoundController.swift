@@ -16,6 +16,8 @@ final class LostAndFoundController: RouteCollection {
         group.get(LostAndFound.parameter, use: getHandler)
         
         group.post(LostAndFound.self, use: createHandler)
+        
+        group.patch(LostAndFound.parameter, "logicdel", use: logicdelHandler)
         group.patch(LostAndFound.parameter, use: updateHandler)
         group.delete(LostAndFound.parameter, use: deleteHandler)
         
@@ -28,7 +30,7 @@ final class LostAndFoundController: RouteCollection {
 extension LostAndFoundController {
     func getAllHandler(_ req: Request) throws -> Future<[LostAndFound]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return LostAndFound.query(on: req).all()
+        return LostAndFound.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -42,6 +44,21 @@ extension LostAndFoundController {
         lostAndFound.createdAt = Date().timeIntervalSince1970
         lostAndFound.status = 1
         return lostAndFound.save(on: req)
+    }
+    
+    // 逻辑删除（status = 0）/id/logicdel
+    func logicdelHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(LostAndFound.self).flatMap { lostAndFound in
+            guard lostAndFound.status != 0 else {
+                return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
+            }
+            lostAndFound.status = 0
+            lostAndFound.updatedAt = Date().timeIntervalSince1970
+            return lostAndFound.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
     }
     
     // id
@@ -78,7 +95,7 @@ extension LostAndFoundController {
     
     func sortedHandler(_ req: Request) throws -> Future<[LostAndFound]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return LostAndFound.query(on: req).sort(\.createdAt, .ascending).all()
+        return LostAndFound.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }
 

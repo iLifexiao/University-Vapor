@@ -28,7 +28,7 @@ final class AcademicController: RouteCollection {
 extension AcademicController {
     func getAllHandler(_ req: Request) throws -> Future<[Academic]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Academic.query(on: req).all()
+        return Academic.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -77,7 +77,7 @@ extension AcademicController {
     
     func sortedHandler(_ req: Request) throws -> Future<[Academic]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Academic.query(on: req).sort(\.createdAt, .ascending).all()
+        return Academic.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }
 

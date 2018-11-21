@@ -16,6 +16,8 @@ final class AnswerController: RouteCollection {
         group.get(Answer.parameter, use: getHandler)
         
         group.post(Answer.self, use: createHandler)
+        
+        group.patch(Answer.parameter, "logicdel", use: logicdelHandler)
         group.patch(Answer.parameter, use: updateHandler)
         group.delete(Answer.parameter, use: deleteHandler)
         
@@ -28,7 +30,7 @@ final class AnswerController: RouteCollection {
 extension AnswerController {
     func getAllHandler(_ req: Request) throws -> Future<[Answer]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Answer.query(on: req).all()
+        return Answer.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -44,6 +46,21 @@ extension AnswerController {
         answer.likeCount = 0
         answer.commentCount = 0
         return answer.save(on: req)
+    }
+    
+    // 逻辑删除（status = 0）/id/logicdel
+    func logicdelHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Answer.self).flatMap { answer in
+            guard answer.status != 0 else {
+                return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
+            }
+            answer.status = 0
+            answer.updatedAt = Date().timeIntervalSince1970
+            return answer.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
     }
     
     // id
@@ -70,21 +87,12 @@ extension AnswerController {
         }
         return Answer.query(on: req).group(.or) { or in
             or.filter(\.content == searchTerm)
+            or.filter(\.status != 0)
         }.all()
-    }
-    
-    func getFirstHandler(_ req: Request) throws -> Future<Answer> {
-        _ = try req.requireAuthenticated(APIUser.self)
-        return Answer.query(on: req).first().map(to: Answer.self) { userInfo in
-            guard let userInfo = userInfo else {
-                throw Abort(.notFound)
-            }
-            return userInfo
-        }
     }
     
     func sortedHandler(_ req: Request) throws -> Future<[Answer]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Answer.query(on: req).sort(\.createdAt, .ascending).all()
+        return Answer.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

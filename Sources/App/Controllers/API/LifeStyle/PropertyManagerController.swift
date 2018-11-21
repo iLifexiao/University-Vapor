@@ -28,7 +28,7 @@ final class PropertyManagerController: RouteCollection {
 extension PropertyManagerController {
     func getAllHandler(_ req: Request) throws -> Future<[PropertyManager]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return PropertyManager.query(on: req).all()
+        return PropertyManager.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -74,11 +74,12 @@ extension PropertyManagerController {
             or.filter(\.name == searchTerm)
             or.filter(\.phone == searchTerm)
             or.filter(\.ability == searchTerm)
+            or.filter(\.status != 0)
             }.all()
     }
     
     func sortedHandler(_ req: Request) throws -> Future<[PropertyManager]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return PropertyManager.query(on: req).sort(\.createdAt, .ascending).all()
+        return PropertyManager.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }

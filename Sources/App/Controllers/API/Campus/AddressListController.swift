@@ -28,7 +28,7 @@ final class AddressListController: RouteCollection {
 extension AddressListController {
     func getAllHandler(_ req: Request) throws -> Future<[AddressList]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return AddressList.query(on: req).all()
+        return AddressList.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -77,7 +77,7 @@ extension AddressListController {
     
     func sortedHandler(_ req: Request) throws -> Future<[AddressList]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return AddressList.query(on: req).sort(\.createdAt, .ascending).all()
+        return AddressList.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }
 

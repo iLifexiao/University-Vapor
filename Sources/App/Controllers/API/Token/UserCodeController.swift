@@ -84,7 +84,7 @@ extension UserCodeController {
         guard let code = req.query[String.self, at: "code"] else {
             throw Abort(.badRequest)
         }
-        let userCode = UserCode.query(on: req).filter(\.code == code).first()
+        let userCode = UserCode.query(on: req).filter(\.code == code).filter(\.status != 0).first()
         return userCode.flatMap { existCode in
             // 注册码错误
             guard existCode != nil else {

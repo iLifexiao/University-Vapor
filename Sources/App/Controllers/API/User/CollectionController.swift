@@ -26,7 +26,7 @@ final class CollectionController: RouteCollection {
 extension CollectionController {
     func getAllHandler(_ req: Request) throws -> Future<[Collection]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Collection.query(on: req).all()
+        return Collection.query(on: req).filter(\.status != 0).all()
     }
     
     // id
@@ -48,19 +48,9 @@ extension CollectionController {
         return try req.parameters.next(Collection.self).delete(on: req).transform(to: .ok)
     }
     
-    func getFirstHandler(_ req: Request) throws -> Future<Collection> {
-        _ = try req.requireAuthenticated(APIUser.self)
-        return Collection.query(on: req).first().map(to: Collection.self) { collection in
-            guard let collection = collection else {
-                throw Abort(.notFound)
-            }
-            return collection
-        }
-    }
-    
     func sortedHandler(_ req: Request) throws -> Future<[Collection]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Collection.query(on: req).sort(\.createdAt, .ascending).all()
+        return Collection.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
     }
 }
 
