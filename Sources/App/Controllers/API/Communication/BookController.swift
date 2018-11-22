@@ -18,6 +18,9 @@ final class BookController: RouteCollection {
         group.post(Book.self, use: createHandler)
         
         group.patch(Book.parameter, "logicdel", use: logicdelHandler)
+        group.patch(Book.parameter, "unlike", use: decreaseLikeHandler)
+        group.patch(Book.parameter, "like", use: increaseLikeHandler)
+        group.patch(Book.parameter, "read", use: increaseReadHandler)
         group.patch(Book.parameter, use: updateHandler)
         group.delete(Book.parameter, use: deleteHandler)
         
@@ -60,6 +63,45 @@ extension BookController {
             book.updatedAt = Date().timeIntervalSince1970
             return book.save(on: req).flatMap { _ in
                 return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
+    }
+    
+    // /id/like
+    func increaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Book.self).flatMap { book in
+            var likeCount = book.likeCount ?? 0
+            likeCount += 1
+            book.likeCount = likeCount
+            return book.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/unlike
+    func decreaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Book.self).flatMap { book in
+            var likeCount = book.likeCount ?? 0
+            likeCount -= 1
+            book.likeCount = likeCount
+            return book.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/read
+    func increaseReadHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Book.self).flatMap { book in
+            var readCount = book.readedCount ?? 0
+            readCount += 1
+            book.readedCount = readCount
+            return book.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
             }
         }
     }

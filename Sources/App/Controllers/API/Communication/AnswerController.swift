@@ -18,6 +18,9 @@ final class AnswerController: RouteCollection {
         group.post(Answer.self, use: createHandler)
         
         group.patch(Answer.parameter, "logicdel", use: logicdelHandler)
+        group.patch(Answer.parameter, "unlike", use: decreaseLikeHandler)
+        group.patch(Answer.parameter, "like", use: increaseLikeHandler)
+        group.patch(Answer.parameter, "read", use: increaseReadHandler)
         group.patch(Answer.parameter, use: updateHandler)
         group.delete(Answer.parameter, use: deleteHandler)
         
@@ -59,6 +62,45 @@ extension AnswerController {
             answer.updatedAt = Date().timeIntervalSince1970
             return answer.save(on: req).flatMap { _ in
                 return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
+    }
+    
+    // /id/like
+    func increaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Answer.self).flatMap { answer in
+            var likeCount = answer.likeCount ?? 0
+            likeCount += 1
+            answer.likeCount = likeCount
+            return answer.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/unlike
+    func decreaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Answer.self).flatMap { answer in
+            var likeCount = answer.likeCount ?? 0
+            likeCount -= 1
+            answer.likeCount = likeCount
+            return answer.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/read
+    func increaseReadHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Answer.self).flatMap { answer in
+            var readCount = answer.readCount ?? 0
+            readCount += 1
+            answer.readCount = readCount
+            return answer.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
             }
         }
     }

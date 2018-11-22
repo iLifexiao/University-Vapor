@@ -18,6 +18,9 @@ final class ResourceController: RouteCollection {
         group.post(Resource.self, use: createHandler)
         
         group.patch(Resource.parameter, "logicdel", use: logicdelHandler)
+        group.patch(Resource.parameter, "unlike", use: decreaseLikeHandler)
+        group.patch(Resource.parameter, "like", use: increaseLikeHandler)
+        group.patch(Resource.parameter, "read", use: increaseReadHandler)
         group.patch(Resource.parameter, use: updateHandler)
         group.delete(Resource.parameter, use: deleteHandler)
         
@@ -59,6 +62,45 @@ extension ResourceController {
             resource.updatedAt = Date().timeIntervalSince1970
             return resource.save(on: req).flatMap { _ in
                 return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
+    }
+    
+    // /id/like
+    func increaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Resource.self).flatMap { resource in
+            var likeCount = resource.likeCount ?? 0
+            likeCount += 1
+            resource.likeCount = likeCount
+            return resource.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/unlike
+    func decreaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Resource.self).flatMap { resource in
+            var likeCount = resource.likeCount ?? 0
+            likeCount -= 1
+            resource.likeCount = likeCount
+            return resource.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/read
+    func increaseReadHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Resource.self).flatMap { resource in
+            var readCount = resource.readCount ?? 0
+            readCount += 1
+            resource.readCount = readCount
+            return resource.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
             }
         }
     }

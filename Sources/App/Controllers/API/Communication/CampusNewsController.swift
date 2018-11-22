@@ -18,6 +18,9 @@ final class CampusNewsController: RouteCollection {
         group.post(CampusNews.self, use: createHandler)
         
         group.patch(CampusNews.parameter, "logicdel", use: logicdelHandler)
+        group.patch(CampusNews.parameter, "unlike", use: decreaseLikeHandler)
+        group.patch(CampusNews.parameter, "like", use: increaseLikeHandler)
+        group.patch(CampusNews.parameter, "read", use: increaseReadHandler)
         group.patch(CampusNews.parameter, use: updateHandler)
         group.delete(CampusNews.parameter, use: deleteHandler)
         
@@ -59,6 +62,45 @@ extension CampusNewsController {
             campusNews.updatedAt = Date().timeIntervalSince1970
             return campusNews.save(on: req).flatMap { _ in
                 return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
+    }
+    
+    // /id/like
+    func increaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(CampusNews.self).flatMap { campusNews in
+            var likeCount = campusNews.likeCount ?? 0
+            likeCount += 1
+            campusNews.likeCount = likeCount
+            return campusNews.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/unlike
+    func decreaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(CampusNews.self).flatMap { campusNews in
+            var likeCount = campusNews.likeCount ?? 0
+            likeCount -= 1
+            campusNews.likeCount = likeCount
+            return campusNews.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+        
+    // /id/read
+    func increaseReadHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(CampusNews.self).flatMap { campusNews in
+            var readCount = campusNews.readCount ?? 0
+            readCount += 1
+            campusNews.readCount = readCount
+            return campusNews.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
             }
         }
     }

@@ -15,6 +15,7 @@ final class Answer: PostgreSQLModel {
     
     var content: String
     
+    var readCount: Int?
     var commentCount: Int?
     var likeCount: Int?
     
@@ -24,14 +25,32 @@ final class Answer: PostgreSQLModel {
     var updatedAt: TimeInterval? // 更新时间
     
     
-    init(id: Int? = nil, userID: User.ID, questionID: Question.ID, content: String, commentCount: Int? = 0, likeCount: Int? = 0, status: Int? = 1) {
+    init(id: Int? = nil, userID: User.ID, questionID: Question.ID, content: String, readCount: Int? = 0, commentCount: Int? = 0, likeCount: Int? = 0, status: Int? = 1) {
         self.id = id
         self.userID = userID
         self.questionID = questionID
         self.content = content
+        self.readCount = readCount
         self.commentCount = commentCount
         self.likeCount = likeCount
         self.status = status
+    }
+}
+
+// 数据库迁移：更新字段的字段
+struct UpdateAnswerField: PostgreSQLMigration {
+    // 删除
+    static func revert(on conn: PostgreSQLConnection) -> EventLoopFuture<Void> {
+        return PostgreSQLDatabase.update(Answer.self, on: conn) { builder in
+            builder.deleteField(for: \.readCount)
+        }
+    }
+    
+    // 添加
+    static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
+        return PostgreSQLDatabase.update(Answer.self, on: conn) { builder in
+            builder.field(for: \.readCount)
+        }
     }
 }
 

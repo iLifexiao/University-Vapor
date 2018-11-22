@@ -42,12 +42,123 @@ extension CommentController {
         return try req.parameters.next(Comment.self)
     }
     
-    func createHandler(_ req: Request, comment: Comment) throws -> Future<Comment> {
+    func createHandler(_ req: Request, comment: Comment) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
-        comment.createdAt = Date().timeIntervalSince1970
-        comment.status = 1
-        comment.likeCount = 0
-        return comment.save(on: req)
+        
+        switch comment.type {
+        case "Essay":
+            return Essay.find(comment.commentID, on: req).flatMap { essay in
+                guard let essay = essay else {
+                    return try ResponseJSON<Empty>(status: .error, message: "该资源不存在，无法评论").encode(for: req)
+                }
+                // 评论数量 +1
+                var commentCount = essay.commentCount ?? 0
+                commentCount += 1
+                essay.commentCount = commentCount
+                return essay.save(on: req).flatMap { _ in
+                    comment.createdAt = Date().timeIntervalSince1970
+                    comment.status = 1
+                    comment.likeCount = 0
+                    return comment.save(on: req).flatMap { _ in
+                        return try ResponseJSON<Empty>(status: .ok, message: "评论成功").encode(for: req)
+                    }
+                }
+            }
+        case "CampusNews":
+            return CampusNews.find(comment.commentID, on: req).flatMap { campusNews in
+                guard let campusNews = campusNews else {
+                    return try ResponseJSON<Empty>(status: .error, message: "该资源不存在，无法评论").encode(for: req)
+                }
+                // 评论数量 +1
+                var commentCount = campusNews.commentCount ?? 0
+                commentCount += 1
+                campusNews.commentCount = commentCount
+                return campusNews.save(on: req).flatMap { _ in
+                    comment.createdAt = Date().timeIntervalSince1970
+                    comment.status = 1
+                    comment.likeCount = 0
+                    return comment.save(on: req).flatMap { _ in
+                        return try ResponseJSON<Empty>(status: .ok, message: "评论成功").encode(for: req)
+                    }
+                }
+            }
+        case "Resource":
+            return Resource.find(comment.commentID, on: req).flatMap { resource in
+                guard let resource = resource else {
+                    return try ResponseJSON<Empty>(status: .error, message: "该资源不存在，无法评论").encode(for: req)
+                }
+                // 评论数量 +1
+                var commentCount = resource.commentCount ?? 0
+                commentCount += 1
+                resource.commentCount = commentCount
+                return resource.save(on: req).flatMap { _ in
+                    comment.createdAt = Date().timeIntervalSince1970
+                    comment.status = 1
+                    comment.likeCount = 0
+                    return comment.save(on: req).flatMap { _ in
+                        return try ResponseJSON<Empty>(status: .ok, message: "评论成功").encode(for: req)
+                    }
+                }
+            }
+        case "Answer":
+            return Answer.find(comment.commentID, on: req).flatMap { answer in
+                guard let answer = answer else {
+                    return try ResponseJSON<Empty>(status: .error, message: "该资源不存在，无法评论").encode(for: req)
+                }
+                // 评论数量 +1
+                var commentCount = answer.commentCount ?? 0
+                commentCount += 1
+                answer.commentCount = commentCount
+                return answer.save(on: req).flatMap { _ in
+                    comment.createdAt = Date().timeIntervalSince1970
+                    comment.status = 1
+                    comment.likeCount = 0
+                    return comment.save(on: req).flatMap { _ in
+                        return try ResponseJSON<Empty>(status: .ok, message: "评论成功").encode(for: req)
+                    }
+                }
+            }
+        case "Book":
+            return Book.find(comment.commentID, on: req).flatMap { book in
+                guard let book = book else {
+                    return try ResponseJSON<Empty>(status: .error, message: "该资源不存在，无法评论").encode(for: req)
+                }
+                // 评论数量 +1
+                var commentCount = book.commentCount ?? 0
+                commentCount += 1
+                book.commentCount = commentCount
+                return book.save(on: req).flatMap { _ in
+                    comment.createdAt = Date().timeIntervalSince1970
+                    comment.status = 1
+                    comment.likeCount = 0
+                    return comment.save(on: req).flatMap { _ in
+                        return try ResponseJSON<Empty>(status: .ok, message: "评论成功").encode(for: req)
+                    }
+                }
+            }
+        case "Experience":
+            return Experience.find(comment.commentID, on: req).flatMap { experience in
+                guard let experience = experience else {
+                    return try ResponseJSON<Empty>(status: .error, message: "该资源不存在，无法评论").encode(for: req)
+                }
+                // 评论数量 +1
+                var commentCount = experience.commentCount ?? 0
+                commentCount += 1
+                experience.commentCount = commentCount
+                return experience.save(on: req).flatMap { _ in
+                    comment.createdAt = Date().timeIntervalSince1970
+                    comment.status = 1
+                    comment.likeCount = 0
+                    return comment.save(on: req).flatMap { _ in
+                        return try ResponseJSON<Empty>(status: .ok, message: "评论成功").encode(for: req)
+                    }
+                }
+            }
+
+        default:
+            return try ResponseJSON<Empty>(status: .error, message: "该类型不存在，无法评论").encode(for: req)
+        }
+ 
     }
     
     // 逻辑删除（status = 0）/id/logicdel
@@ -134,6 +245,6 @@ extension CommentController {
             throw Abort(.badRequest)
         }
         // 通过类型 和 ID 唯一确定评论
-        return Comment.query(on: req).filter(\.status != 0).filter(\.type == type).filter(\.commentID == commentID).sort(\.createdAt, .descending).all()
+        return Comment.query(on: req).filter(\.status != 0).filter(\.type == type).filter(\.commentID == commentID).all()
     }
 }

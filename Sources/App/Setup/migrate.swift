@@ -54,6 +54,14 @@ public func migrate(migrations: inout MigrationConfig) throws {
     migrations.add(model: Experience.self, database: .psql)
     migrations.add(model: Comment.self, database: .psql)
     
+    // 迁移(新增read/like、comment字段) migration
+    migrations.add(migration: UpdateCampusNewsField.self, database: .psql)
+    migrations.add(migration: UpdateResourceField.self, database: .psql)
+    migrations.add(migration: UpdateAnswerField.self, database: .psql)
+    migrations.add(migration: UpdateExperienceField.self, database: .psql)
+    migrations.add(migration: UpdateBookField.self, database: .psql)
+    
+    
     // LifeStype
     migrations.add(model: IdleGood.self, database: .psql)
     migrations.add(model: UtilityBill.self, database: .psql)

@@ -18,6 +18,9 @@ final class ExperienceController: RouteCollection {
         group.post(Experience.self, use: createHandler)
         
         group.patch(Experience.parameter, "logicdel", use: logicdelHandler)
+        group.patch(Experience.parameter, "unlike", use: decreaseLikeHandler)
+        group.patch(Experience.parameter, "like", use: increaseLikeHandler)
+        group.patch(Experience.parameter, "read", use: increaseReadHandler)
         group.patch(Experience.parameter, use: updateHandler)
         group.delete(Experience.parameter, use: deleteHandler)
         
@@ -59,6 +62,45 @@ extension ExperienceController {
             experience.updatedAt = Date().timeIntervalSince1970
             return experience.save(on: req).flatMap { _ in
                 return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
+    }
+    
+    // /id/like
+    func increaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Experience.self).flatMap { experience in
+            var likeCount = experience.likeCount ?? 0
+            likeCount += 1
+            experience.likeCount = likeCount
+            return experience.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/unlike
+    func decreaseLikeHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Experience.self).flatMap { experience in
+            var likeCount = experience.likeCount ?? 0
+            likeCount -= 1
+            experience.likeCount = likeCount
+            return experience.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+            }
+        }
+    }
+    
+    // /id/read
+    func increaseReadHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Experience.self).flatMap { experience in
+            var readCount = experience.readCount ?? 0
+            readCount += 1
+            experience.readCount = readCount
+            return experience.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok).encode(for: req)
             }
         }
     }
