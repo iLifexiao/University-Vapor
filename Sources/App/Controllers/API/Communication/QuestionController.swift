@@ -17,6 +17,7 @@ final class QuestionController: RouteCollection {
         
         group.post(Question.self, use: createHandler)
         
+        group.get(Question.parameter, "answer", use: questionAnswersHandler)
         group.patch(Question.parameter, "logicdel", use: logicdelHandler)
         group.patch(Question.parameter, use: updateHandler)
         group.delete(Question.parameter, use: deleteHandler)
@@ -46,6 +47,17 @@ extension QuestionController {
         question.answerCount = 0
         return question.save(on: req)
     }
+    
+    // 获得问题的回答，/id/answer
+    func questionAnswersHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Question.self).flatMap { question in
+            return try question.answers.query(on: req).filter(\.status != 0).all().flatMap { answers in
+                return try ResponseJSON<[Answer]>(status: .ok, message: "获取回答成功", data: answers).encode(for: req)
+            }
+        }
+    }
+    
     
     // 逻辑删除（status = 0）/id/logicdel
     func logicdelHandler(_ req: Request) throws -> Future<Response> {

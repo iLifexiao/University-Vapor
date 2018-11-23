@@ -36,6 +36,7 @@ final class UserController: RouteCollection {
         group.get(User.parameter, "fans", use: getFans)
         group.get(User.parameter, "fans", "count", use: getFansCount)
         group.get(User.parameter, "collections", use: getCollections)
+        group.get(User.parameter, "collections", "essay", use: getEssayCollections)
         group.get(User.parameter, "collections", "count", use: getCollectionsCount)
         group.get(User.parameter, "honors", use: getHonors)
         group.get(User.parameter, "messages", use: getMessages)
@@ -312,6 +313,20 @@ extension UserController {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Collection].self) { user in
             try user.collections.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
+        }
+    }
+    
+    // 获得我的收藏的文章 /id/collections/essay
+    func getEssayCollections(_ req: Request) throws -> Future<[Essay]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(User.self).flatMap { user in
+            try user.collections.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all().flatMap { collections in
+                var essays: [Future<Essay>] = []
+                for collection in collections {
+                    essays.append(Essay.find(collection.collectionID, on: req).unwrap(or: Abort(HTTPStatus.notFound)))
+                }
+                return essays.flatten(on: req)
+            }
         }
     }
     

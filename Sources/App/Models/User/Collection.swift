@@ -28,7 +28,12 @@ final class Collection: PostgreSQLModel {
     }
 }
 
-extension Collection {
+extension Collection {    
+    struct DelInfo: Content {
+        var userID: Int
+        var collectionID: Int
+    }
+    
     var user: Parent<Collection, User> {
         return parent(\.userID)
     }

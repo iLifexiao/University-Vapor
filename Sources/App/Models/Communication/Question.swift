@@ -38,6 +38,10 @@ extension Question {
     var user: Parent<Question, User> {
         return parent(\.userID)
     }
+    
+    var answers: Children<Question, Answer> {
+        return children(\.questionID)
+    }
 }
 
 

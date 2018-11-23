@@ -42,13 +42,27 @@ extension AnswerController {
         return try req.parameters.next(Answer.self)
     }
     
-    func createHandler(_ req: Request, answer: Answer) throws -> Future<Answer> {
+    func createHandler(_ req: Request, answer: Answer) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         answer.createdAt = Date().timeIntervalSince1970
         answer.status = 1
         answer.likeCount = 0
         answer.commentCount = 0
-        return answer.save(on: req)
+        answer.readCount = 0
+        return answer.save(on: req).flatMap { _ in
+            Question.find(answer.questionID, on: req).flatMap { question in
+                guard question != nil else {
+                    return try ResponseJSON<Empty>(status: .error, message: "资源不存在").encode(for: req)
+                }
+                
+                var answerCount = question!.answerCount ?? 0
+                answerCount += 1
+                question!.answerCount = answerCount
+                return question!.save(on: req).flatMap { _ in
+                    return try ResponseJSON<Empty>(status: .ok, message: "发表成功").encode(for: req)
+                }
+            }
+        }
     }
     
     // 逻辑删除（status = 0）/id/logicdel

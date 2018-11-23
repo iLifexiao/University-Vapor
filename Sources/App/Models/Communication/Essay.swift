@@ -39,6 +39,11 @@ final class Essay: PostgreSQLModel {
 }
 
 extension Essay {
+    // 获取列表里的ID信息
+    struct IDList: Content {
+        var ids: [Int]
+    }
+    
     var user: Parent<Essay, User> {
         return parent(\.userID)
     }

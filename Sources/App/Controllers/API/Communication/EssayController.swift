@@ -16,6 +16,8 @@ final class EssayController: RouteCollection {
         group.get(Essay.parameter, use: getHandler)
         
         group.post(Essay.self, use: createHandler)
+        // 获取数组里的信息
+        group.post(Essay.IDList.self, at: "list", use: getListEssayHandler)
         
         group.patch(Essay.parameter, "logicdel", use: logicdelHandler)
         group.patch(Essay.parameter, use: updateHandler)
@@ -50,6 +52,15 @@ extension EssayController {
         essay.commentCount = 0
         essay.readCount = 0
         return essay.save(on: req)
+    }
+    
+    func getListEssayHandler(_ req: Request, idList: Essay.IDList) throws -> Future<[Essay]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        var essays: [Future<Essay>] = []
+        for id in idList.ids {
+            essays.append(Essay.find(id, on: req).unwrap(or: Abort(HTTPStatus.notFound)))
+        }
+        return essays.flatten(on: req)
     }
     
     // 逻辑删除（status = 0）/id/logicdel
