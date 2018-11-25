@@ -68,6 +68,8 @@ enum ResponseStatus:Int, Content {
     case registerCodeInvalid = 30
     case userCodeInvalid = 40
     
+    case imageToBig = 50
+    
     var desc : String {
         switch self {
         case .ok:
@@ -90,6 +92,9 @@ enum ResponseStatus:Int, Content {
             return "注册码无效"
         case .userCodeInvalid:
             return "修改码无效"
+        case .imageToBig:
+            return "图片过大(限制2M)"
+            
         }
     }
 }

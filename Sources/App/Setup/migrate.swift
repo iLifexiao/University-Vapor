@@ -69,4 +69,5 @@ public func migrate(migrations: inout MigrationConfig) throws {
     migrations.add(model: PropertyManager.self, database: .psql)
     migrations.add(model: SchoolStore.self, database: .psql)
     migrations.add(model: PartTimeJob.self, database: .psql)
+    migrations.add(model: Holiday.self, database: .psql)
 }

@@ -22,6 +22,10 @@ public func routes(_ router: Router) throws {
     authedRoutes.get("profile", use: apiUserController.profile)
     authedRoutes.get("logout", use: apiUserController.logout)
     
+    // 上传图片
+    let uploadFileController = UploadFileController()
+    try authedRoutes.register(collection: uploadFileController)
+    
     // 测试用例
     let todoController = TodoController()
     try authedRoutes.register(collection: todoController)
@@ -111,6 +115,7 @@ public func routes(_ router: Router) throws {
     let propertyManagerController = PropertyManagerController()
     let schoolStoreController = SchoolStoreController()
     let partTimeJobController = PartTimeJobController()
+    let holidayController = HolidayController()
     
     try authedRoutes.register(collection: idleGoodController)
     try authedRoutes.register(collection: utilityBillController)
@@ -118,5 +123,6 @@ public func routes(_ router: Router) throws {
     try authedRoutes.register(collection: propertyManagerController)
     try authedRoutes.register(collection: schoolStoreController)
     try authedRoutes.register(collection: partTimeJobController)
+    try authedRoutes.register(collection: holidayController)
     
 }

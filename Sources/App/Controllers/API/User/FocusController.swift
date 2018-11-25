@@ -40,14 +40,20 @@ extension FocusController {
     
     func createHandler(_ req: Request, focus: Focus) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
-        focus.createdAt = Date().timeIntervalSince1970
-        focus.status = 1
+        
+        // 不能关注自己
+        guard focus.userID != focus.focusUserID else {
+            return try ResponseJSON<Empty>(status: .error, message: "不能关注自己~").encode(for: req)
+        }
         
         return Focus.query(on: req).filter(\.userID == focus.userID).filter(\.focusUserID == focus.focusUserID).first().flatMap { fetchFocus in
             // 避免重复关注
             guard fetchFocus == nil else {
                 return try ResponseJSON<Empty>(status: .error, message: "你已经关注该用户了").encode(for: req)
             }
+            
+            focus.createdAt = Date().timeIntervalSince1970
+            focus.status = 1
             
             return focus.save(on: req).flatMap { _ in
                 return try ResponseJSON<Empty>(status: .ok, message: "回关成功").encode(for: req)

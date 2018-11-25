@@ -109,7 +109,7 @@ extension UserController {
                         // 生成随机图片
                         let randomInt = try OSRandom().generate(UInt.self)
                         let random0to11 = randomInt % 12 // 生成[0~11]的随机数
-                        let randomImage = "/image/" + String(random0to11) + ".jpg"
+                        let randomImage = "/image/head/" + String(random0to11) + ".jpg"
                         // 用户名称
                         let userName = "用户" + storedUser.account
                         let userInfo = UserInfo(userID: try storedUser.requireID(), nickname: userName, profilephoto: randomImage)
