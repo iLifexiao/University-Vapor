@@ -53,9 +53,10 @@ struct ResponseJSON<T: Content>: Content {
 }
 
 // 返回JSON的状态码
+// 更新状态码「0 == error,ok == 1」
 enum ResponseStatus:Int, Content {
-    case ok = 0
-    case error = 1
+    case error = 0
+    case ok = 1
     case missesPara = 3
     
     case unknown = 10

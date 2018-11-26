@@ -68,6 +68,11 @@ extension FocusController {
                 return try ResponseJSON<Empty>(status: .userNotExist).encode(for: req)
             }
             
+            // 检查用户是否登录
+            if focusAccount.userID == 0 {
+                return try ResponseJSON<Empty>(status: .error, message: "请先登录").encode(for: req)
+            }
+            
             // 不能关注自己
             guard focusAccount.userID != existUser.id! else {
                 return try ResponseJSON<Empty>(status: .error, message: "不能关注自己~").encode(for: req)

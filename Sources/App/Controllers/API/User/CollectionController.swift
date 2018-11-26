@@ -43,6 +43,11 @@ extension CollectionController {
                 return try ResponseJSON<Empty>(status: .error, message: "你已经收藏了~").encode(for: req)
             }
             
+            // 检查用户是否登录
+            if collection.userID == 0 {
+                return try ResponseJSON<Empty>(status: .error, message: "请先登录").encode(for: req)
+            }
+            
             collection.createdAt = Date().timeIntervalSince1970
             collection.status = 1
             return collection.save(on: req).flatMap { _ in

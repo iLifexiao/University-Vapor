@@ -28,6 +28,7 @@ final class UserController: RouteCollection {
         group.post(User.LostPwd.self, at: "lostpwd", use: lostPassword)
         
         // 用户相关的信息 get
+        group.get(User.parameter, "userstatus", use: getUserStatus)
         group.get(User.parameter, "userinfo", use: getUserInfo)
         group.get(User.parameter, "student", use: getStudent)
         group.get(User.parameter, "student", "lesson", use: getStudentLesson)
@@ -212,6 +213,20 @@ extension UserController {
     
     
     // MARK: 用户相关信息API
+    
+    // 获取用户状态
+    func getUserStatus(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(User.self).flatMap { user in
+            if user.status == 1 {
+                return try ResponseJSON<Empty>(status: .ok, message: "用户帐号状态正常").encode(for: req)
+            } else {
+                return try ResponseJSON<Empty>(status: .error, message: "帐号被封禁").encode(for: req)
+            }
+        }
+    }
+    
+    
     // 1:1 的需要采用以下方式来获取
     // 获得用户的信息 /id/userinfo
     func getUserInfo(_ req: Request) throws -> Future<UserInfo> {
