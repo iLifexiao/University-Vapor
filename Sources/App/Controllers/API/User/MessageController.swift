@@ -17,8 +17,10 @@ final class MessageController: RouteCollection {
         
         group.post(Message.self, use: createHandler)
         group.post(Message.self, at: "two", use: createHandlerTwo)
+        group.post(Message.AllDelete.self, at: "delall", use: delAllHandler)
         group.post(Message.SendAccount.self, at: "account", use: sendMsgByAccount)
         group.delete(Message.parameter, use: deleteHandler)
+        group.patch(Message.parameter, "logicdel", use: logicdelHandler)
         
         group.get("sort", use: sortedHandler)
     }
@@ -26,6 +28,7 @@ final class MessageController: RouteCollection {
 }
 
 extension MessageController {
+    // 表的链接，返回元组
     func getAllHandler(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return Message.query(on: req).filter(\.status != 0).all()
@@ -96,6 +99,35 @@ extension MessageController {
         }
     }
     
+    // 逻辑删除（status = 0）/id/logicdel    
+    func logicdelHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(Message.self).flatMap { message in
+            guard message.status != 0 else {
+                return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
+            }
+            message.status = 0
+            message.updatedAt = Date().timeIntervalSince1970
+            return message.save(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
+            }
+        }
+    }
+    
+    func delAllHandler(_ req: Request, info: Message.AllDelete) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return Message.query(on: req).filter(\.userID == info.userID).filter(\.friendID == info.friendID).all().flatMap { messages in
+            var responses: [Future<Message>] = []
+            for msg in messages {
+                msg.status = 0
+                msg.updatedAt = Date().timeIntervalSince1970
+                responses.append(msg.save(on: req))
+            }
+            return responses.flatten(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "私信删除成功").encode(for: req)
+            }
+        }
+    }
 
     
     // id

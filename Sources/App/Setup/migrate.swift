@@ -60,6 +60,7 @@ public func migrate(migrations: inout MigrationConfig) throws {
     migrations.add(migration: UpdateAnswerField.self, database: .psql)
     migrations.add(migration: UpdateExperienceField.self, database: .psql)
     migrations.add(migration: UpdateBookField.self, database: .psql)
+    migrations.add(migration: UpdateMessageField.self, database: .psql)    
     
     
     // LifeStype

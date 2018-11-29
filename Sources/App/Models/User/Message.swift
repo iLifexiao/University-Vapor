@@ -17,8 +17,9 @@ final class Message: PostgreSQLModel {
     
     var content: String
     var type: String? // 类型「普通、系统」
-    var status: Int? // 状态[0, 1, 2, 3] = [禁止、 未读、已读、删除]
+    var status: Int? // 状态[0, 1, 2] = [删除、未读、已读]
     var createdAt: TimeInterval? // 创建时间
+    var updatedAt: TimeInterval?
     
     init(id: Int? = nil, userID: User.ID, friendID: User.ID, fromUserID: User.ID, toUserID: User.ID, content: String, type: String? = "普通", status: Int? = 1) {
         self.id = id
@@ -32,6 +33,23 @@ final class Message: PostgreSQLModel {
     }
 }
 
+// 数据库迁移：更新字段的字段
+struct UpdateMessageField: PostgreSQLMigration {
+    // 删除
+    static func revert(on conn: PostgreSQLConnection) -> EventLoopFuture<Void> {
+        return PostgreSQLDatabase.update(Message.self, on: conn) { builder in
+            builder.deleteField(for: \.updatedAt)
+        }
+    }
+    
+    // 添加
+    static func prepare(on conn: PostgreSQLConnection) -> Future<Void> {
+        return PostgreSQLDatabase.update(Message.self, on: conn) { builder in
+            builder.field(for: \.updatedAt)
+        }
+    }
+}
+
 extension Message {
     // 发送信息的格式
     struct SendAccount: Content {
@@ -39,6 +57,30 @@ extension Message {
         var account: String
         var content: String
         var type: String
+    }
+    
+    // 批量删除
+    struct AllDelete: Content {
+        var userID: Int
+        var friendID: Int
+    }
+    
+    struct AddUserInfo: Content {
+        var id: Int?
+        var userID: User.ID
+        var friendID: User.ID
+        var fromUserID: User.ID
+        var toUserID: User.ID
+        
+        var content: String
+        var type: String?
+        var status: Int?
+        var createdAt: TimeInterval?
+        var updatedAt: TimeInterval?
+        
+        // userInfo
+        var nickname: String
+        var profilephoto: String
     }
     
     var user: Parent<Message, User> {
