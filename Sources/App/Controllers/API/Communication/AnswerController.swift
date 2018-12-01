@@ -13,6 +13,7 @@ final class AnswerController: RouteCollection {
     func boot(router: Router) throws {
         let group = router.grouped("api", "v1", "answer")
         group.get("all", use: getAllHandler)
+        group.get("tuples", use: getTuplesHandler)
         group.get(Answer.parameter, use: getHandler)
         
         group.post(Answer.self, use: createHandler)
@@ -34,6 +35,24 @@ extension AnswerController {
     func getAllHandler(_ req: Request) throws -> Future<[Answer]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return Answer.query(on: req).filter(\.status != 0).all()
+    }
+    
+    func getTuplesHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        // 获得tuples数组
+        let joinTuples = Answer.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).join(\UserInfo.userID, to: \Answer.userID).alsoDecode(UserInfo.self).all()
+        
+        // 将数组转化为想要的字典数据
+        return joinTuples.map { tuples in
+            let data = tuples.map { tuple -> [String : Any] in
+                var msgDict = tuple.0.toDictionary()
+                let userInfoDict = tuple.1.toDictionary()
+                msgDict["userInfo"] = userInfoDict
+                return msgDict
+            }
+            // 创建反应
+            return try createGetResponse(req, data: data)
+        }
     }
     
     // id

@@ -13,11 +13,13 @@ final class MessageController: RouteCollection {
     func boot(router: Router) throws {
         let group = router.grouped("api", "v1", "message")
         group.get("all", use: getAllHandler)
+        group.get("tuples", use: getTuplesHandler)
         group.get(Message.parameter, use: getHandler)
         
         group.post(Message.self, use: createHandler)
         group.post(Message.self, at: "two", use: createHandlerTwo)
-        group.post(Message.AllDelete.self, at: "delall", use: delAllHandler)
+        group.post(Message.PeopleIM.self, at: "delall", use: delAllHandler)
+        group.post(Message.PeopleIM.self, at: "showim", use: getPeopleIMHandler)
         group.post(Message.SendAccount.self, at: "account", use: sendMsgByAccount)
         group.delete(Message.parameter, use: deleteHandler)
         group.patch(Message.parameter, "logicdel", use: logicdelHandler)
@@ -32,6 +34,24 @@ extension MessageController {
     func getAllHandler(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return Message.query(on: req).filter(\.status != 0).all()
+    }
+    
+    func getTuplesHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        // 获得tuples数组
+        let joinTuples = Message.query(on: req).join(\UserInfo.userID, to: \Message.friendID).alsoDecode(UserInfo.self).all()
+        
+        // 将数组转化为想要的字典数据
+        return joinTuples.map { tuples in
+            let data = tuples.map { tuple -> [String : Any] in
+                var msgDict = tuple.0.toDictionary()
+                let userInfoDict = tuple.1.toDictionary()
+                msgDict["userInfo"] = userInfoDict
+                return msgDict
+            }
+            // 创建反应
+            return try createGetResponse(req, data: data)
+        }
     }
     
     // id
@@ -114,7 +134,7 @@ extension MessageController {
         }
     }
     
-    func delAllHandler(_ req: Request, info: Message.AllDelete) throws -> Future<Response> {
+    func delAllHandler(_ req: Request, info: Message.PeopleIM) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return Message.query(on: req).filter(\.userID == info.userID).filter(\.friendID == info.friendID).all().flatMap { messages in
             var responses: [Future<Message>] = []
@@ -128,7 +148,12 @@ extension MessageController {
             }
         }
     }
-
+    
+    
+    func getPeopleIMHandler(_ req: Request, info: Message.PeopleIM) throws -> Future<[Message]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return Message.query(on: req).filter(\.userID == info.userID).filter(\.friendID == info.friendID).all()
+    }
     
     // id
     func deleteHandler(_ req: Request) throws -> Future<Response> {

@@ -13,6 +13,7 @@ final class CommentController: RouteCollection {
     func boot(router: Router) throws {
         let group = router.grouped("api", "v1", "comment")
         group.get("all", use: getAllHandler)
+        group.get("tuples", use: getTuplesHandler)
         group.get(Comment.parameter, use: getHandler)
         
         group.post(Comment.self, use: createHandler)
@@ -34,6 +35,24 @@ extension CommentController {
     func getAllHandler(_ req: Request) throws -> Future<[Comment]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return Comment.query(on: req).filter(\.status != 0).all()
+    }
+    
+    func getTuplesHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        // 获得tuples数组
+        let joinTuples = Comment.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).join(\UserInfo.userID, to: \Comment.userID).alsoDecode(UserInfo.self).all()
+        
+        // 将数组转化为想要的字典数据
+        return joinTuples.map { tuples in
+            let data = tuples.map { tuple -> [String : Any] in
+                var msgDict = tuple.0.toDictionary()
+                let userInfoDict = tuple.1.toDictionary()
+                msgDict["userInfo"] = userInfoDict
+                return msgDict
+            }
+            // 创建反应
+            return try createGetResponse(req, data: data)
+        }
     }
     
     // id
@@ -236,7 +255,7 @@ extension CommentController {
     }
 
     // type?term=?&id=?
-    func getAllTypeHandler(_ req: Request) throws -> Future<[Comment]> {
+    func getAllTypeHandler(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         guard let type = req.query[String.self, at: "term"] else {
             throw Abort(.badRequest)
@@ -245,6 +264,18 @@ extension CommentController {
             throw Abort(.badRequest)
         }
         // 通过类型 和 ID 唯一确定评论
-        return Comment.query(on: req).filter(\.status != 0).filter(\.type == type).filter(\.commentID == commentID).all()
+        let joinTuples = Comment.query(on: req).filter(\.status != 0).filter(\.type == type).filter(\.commentID == commentID).join(\UserInfo.userID, to: \Comment.userID).alsoDecode(UserInfo.self).all()
+        
+        // 将数组转化为想要的字典数据
+        return joinTuples.map { tuples in
+            let data = tuples.map { tuple -> [String : Any] in
+                var msgDict = tuple.0.toDictionary()
+                let userInfoDict = tuple.1.toDictionary()
+                msgDict["userInfo"] = userInfoDict
+                return msgDict
+            }
+            // 创建反应
+            return try createGetResponse(req, data: data)
+        }
     }
 }

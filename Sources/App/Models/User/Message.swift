@@ -50,6 +50,23 @@ struct UpdateMessageField: PostgreSQLMigration {
     }
 }
 
+extension Message: Mappable {
+    func toDictionary() -> [String : Any] {
+        return [
+            "id": id ?? 0,
+            "userID": userID,
+            "friendID": friendID,
+            "fromUserID": fromUserID,
+            "toUserID": toUserID,
+            "content": content,
+            "type": type ?? "普通",
+            "status": status ?? 1,
+            "createdAt": createdAt ?? 0,
+            "updatedAt": updatedAt ?? 0
+        ]
+    }
+}
+
 extension Message {
     // 发送信息的格式
     struct SendAccount: Content {
@@ -59,28 +76,10 @@ extension Message {
         var type: String
     }
     
-    // 批量删除
-    struct AllDelete: Content {
+    // 批量删除、查找于他人的聊天记录
+    struct PeopleIM: Content {
         var userID: Int
         var friendID: Int
-    }
-    
-    struct AddUserInfo: Content {
-        var id: Int?
-        var userID: User.ID
-        var friendID: User.ID
-        var fromUserID: User.ID
-        var toUserID: User.ID
-        
-        var content: String
-        var type: String?
-        var status: Int?
-        var createdAt: TimeInterval?
-        var updatedAt: TimeInterval?
-        
-        // userInfo
-        var nickname: String
-        var profilephoto: String
     }
     
     var user: Parent<Message, User> {

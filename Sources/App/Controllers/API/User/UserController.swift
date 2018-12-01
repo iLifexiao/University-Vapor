@@ -365,10 +365,20 @@ extension UserController {
     }
     
     // 获得我的信息 /id/messages
-    func getMessages(_ req: Request) throws -> Future<[Message]> {
+    func getMessages(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return try req.parameters.next(User.self).flatMap(to: [Message].self) { user in
-            try user.messages.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
+        return try req.parameters.next(User.self).flatMap { user in
+            let joinTuples = try user.messages.query(on: req).filter(\.status != 0).join(\UserInfo.userID, to: \Message.friendID).alsoDecode(UserInfo.self).all()
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
+                }
+                // 创建反应
+                return try createGetResponse(req, data: data)
+            }
         }
     }
     
@@ -409,10 +419,22 @@ extension UserController {
     }
     
     // 获得我的文章(倒序) /id/essays
-    func getEssays(_ req: Request) throws -> Future<[Essay]> {
+    func getEssays(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return try req.parameters.next(User.self).flatMap(to: [Essay].self) { user in
-            try user.essays.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
+        return try req.parameters.next(User.self).flatMap { user in
+            let joinTuples = try user.essays.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).join(\UserInfo.userID, to: \Essay.userID).alsoDecode(UserInfo.self).all()
+            
+            // 将数组转化为想要的字典数据
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
+                }
+                // 创建反应
+                return try createGetResponse(req, data: data)
+            }
         }
     }
     
@@ -444,26 +466,63 @@ extension UserController {
     }
     
     // 获得我的回答 /id/answers
-    func getAnswers(_ req: Request) throws -> Future<[Answer]> {
+    func getAnswers(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return try req.parameters.next(User.self).flatMap(to: [Answer].self) { user in
-            try user.answers.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
+        return try req.parameters.next(User.self).flatMap { user in
+            let joinTuples = try user.answers.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).join(\UserInfo.userID, to: \Answer.userID).alsoDecode(UserInfo.self).all()
+            
+            // 将数组转化为想要的字典数据
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
+                }
+                // 创建反应
+                return try createGetResponse(req, data: data)
+            }
         }
     }
     
     // 获得我的经验 /id/experiences
-    func getExperiences(_ req: Request) throws -> Future<[Experience]> {
+    func getExperiences(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return try req.parameters.next(User.self).flatMap(to: [Experience].self) { user in
-            try user.experiences.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
+        return try req.parameters.next(User.self).flatMap { user in
+            let joinTuples = try user.experiences.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).join(\UserInfo.userID, to: \Experience.userID).alsoDecode(UserInfo.self).all()
+            
+            // 将数组转化为想要的字典数据
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
+                }
+                // 创建反应
+                return try createGetResponse(req, data: data)
+            }
+            
         }
     }
     
     // 获得我的评论 /id/comments
-    func getComments(_ req: Request) throws -> Future<[Comment]> {
+    func getComments(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return try req.parameters.next(User.self).flatMap(to: [Comment].self) { user in
-            try user.comments.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
+        return try req.parameters.next(User.self).flatMap { user in
+            let joinTuples = try user.comments.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).join(\UserInfo.userID, to: \Comment.userID).alsoDecode(UserInfo.self).all()
+            
+            // 将数组转化为想要的字典数据
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
+                }
+                // 创建反应
+                return try createGetResponse(req, data: data)
+            }
         }
     }
     

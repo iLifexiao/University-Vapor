@@ -54,6 +54,27 @@ struct UpdateAnswerField: PostgreSQLMigration {
     }
 }
 
+extension Answer: Mappable {
+    func toDictionary() -> [String : Any] {
+        return [
+        "id": id ?? 0,
+        "userID": userID,
+        "questionID": questionID,
+        
+        "content": content,
+        
+        "readCount": readCount ?? 0,
+        "commentCount": commentCount ?? 0,
+        "likeCount": likeCount ?? 0,
+        
+        "status": status ?? 0,
+        "remark": remark ?? 0,
+        "createdAt": createdAt ?? 0,
+        "updatedAt": updatedAt ?? 0
+        ]
+    }
+}
+
 extension Answer {
     var user: Parent<Answer, User> {
         return parent(\.userID)

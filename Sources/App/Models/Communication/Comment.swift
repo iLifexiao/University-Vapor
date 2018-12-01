@@ -33,6 +33,22 @@ final class Comment: PostgreSQLModel {
     }
 }
 
+extension Comment: Mappable {
+    func toDictionary() -> [String : Any] {
+        return [
+        "id": id ?? 0,
+        "userID": userID,
+        "commentID": commentID,
+        "content": content,
+        "type": type,
+        "likeCount": likeCount ?? 0,
+        "status": status ?? 0,
+        "createdAt": createdAt ?? 0,
+        "updatedAt": updatedAt ?? 0
+        ]
+    }
+}
+
 extension Comment {
     var user: Parent<Comment, User> {
         return parent(\.userID)

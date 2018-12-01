@@ -54,6 +54,25 @@ struct UpdateExperienceField: PostgreSQLMigration {
     }
 }
 
+extension Experience: Mappable {
+    func toDictionary() -> [String : Any] {
+        return [
+            "id": id ?? 0,
+            "userID": userID,
+            "title": title,
+            "content": content,
+            "type": type,
+            "readCount": readCount ?? 0,
+            "commentCount": commentCount ?? 0,
+            "likeCount": likeCount ?? 0,
+            "status": status ?? 1,
+            "createdAt": createdAt ?? 0,
+            "updatedAt": updatedAt ?? 0
+            
+        ]
+    }
+}
+
 extension Experience {
     var user: Parent<Experience, User> {
         return parent(\.userID)

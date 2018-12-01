@@ -38,6 +38,24 @@ final class Essay: PostgreSQLModel {
     }
 }
 
+extension Essay: Mappable {
+    func toDictionary() -> [String : Any] {
+        return [
+            "id": id ?? 0,
+            "userID": userID,
+            "title": title,
+            "content": content,
+            "type": type,
+            "commentCount": commentCount ?? 0,
+            "likeCount": likeCount ?? 0,
+            "readCount": readCount ?? 0,
+            "status": status ?? 1,
+            "createdAt": createdAt ?? 0,
+            "updatedAt": updatedAt ?? 0
+        ]
+    }
+}
+
 extension Essay {
     // 获取列表里的ID信息
     struct IDList: Content {

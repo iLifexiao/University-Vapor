@@ -52,8 +52,18 @@ extension QuestionController {
     func questionAnswersHandler(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(Question.self).flatMap { question in
-            return try question.answers.query(on: req).filter(\.status != 0).all().flatMap { answers in
-                return try ResponseJSON<[Answer]>(status: .ok, message: "获取回答成功", data: answers).encode(for: req)
+            let joinTuples = try question.answers.query(on: req).filter(\.status != 0).join(\UserInfo.userID, to: \Answer.userID).alsoDecode(UserInfo.self).all()
+            
+            // 将数组转化为想要的字典数据
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
+                }
+                // 创建反应
+                return try createGetResponse(req, data: data)
             }
         }
     }

@@ -99,3 +99,14 @@ enum ResponseStatus:Int, Content {
         }
     }
 }
+
+func createGetResponse(_ req: Request, data: Any) throws -> Response {
+    let response = req.response()
+    response.http.status = .ok
+    response.http.headers.replaceOrAdd(name: .contentType, value: "application/json")
+    
+    let json = try JSONSerialization.data(withJSONObject: data)
+    response.http.body = HTTPBody(data: json)
+    
+    return response
+}

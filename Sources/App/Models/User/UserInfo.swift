@@ -39,6 +39,15 @@ final class UserInfo: PostgreSQLModel {
     }
 }
 
+extension UserInfo: Mappable {
+    func toDictionary() -> [String : Any] {
+        return [
+            "nickname": nickname,
+            "profilephoto": profilephoto
+        ]
+    }
+}
+
 extension UserInfo {
     // 表示 UserInfo 的父母是 User
     var user: Parent<UserInfo, User> {
