@@ -36,6 +36,26 @@ final class IdleGood: PostgreSQLModel {
     }
 }
 
+extension IdleGood: Mappable {
+    func toDictionary() -> [String : Any] {
+        return [
+            "id": id ?? 0,
+            "userID": userID,
+            
+            "imageURLs": imageURLs ?? [""],
+            "title": title,
+            "content": content,
+            "originalPrice": originalPrice,
+            "price": price,
+            "type": type,
+            
+            "status": status ?? 1,            
+            "createdAt": createdAt ?? 0,
+            "updatedAt": updatedAt ?? 0
+        ]
+    }
+}
+
 extension IdleGood {
     var user: Parent<IdleGood, User> {
         return parent(\.userID)

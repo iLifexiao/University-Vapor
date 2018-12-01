@@ -37,6 +37,26 @@ final class LostAndFound: PostgreSQLModel {
     }
 }
 
+extension LostAndFound: Mappable {
+    func toDictionary() -> [String : Any] {
+        return [
+            "id": id ?? 0,
+            "userID": userID,
+        
+            "imageURL": imageURL ?? [""],
+            "title": title,
+            "content": content,
+            "time": time,
+            "site": site,
+        
+            "status": status ?? 1,
+            "remark": remark ?? "",
+            "createdAt": createdAt ?? 0,
+            "updatedAt": updatedAt ?? 0
+        ]
+    }
+}
+
 extension LostAndFound {
     var user: Parent<LostAndFound, User> {
         return parent(\.userID)

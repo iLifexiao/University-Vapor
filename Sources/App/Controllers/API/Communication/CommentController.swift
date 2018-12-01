@@ -24,17 +24,47 @@ final class CommentController: RouteCollection {
         group.patch(Comment.parameter, use: updateHandler)
         group.delete(Comment.parameter, use: deleteHandler)
         
-        group.get("search", use: searchHandler)        
+        group.get("type", "split", use: getPageHandler)
+        group.get("search", use: searchHandler)
         group.get("sort", use: sortedHandler)
         group.get("type", use: getAllTypeHandler)
     }
-    
 }
 
 extension CommentController {
     func getAllHandler(_ req: Request) throws -> Future<[Comment]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return Comment.query(on: req).filter(\.status != 0).all()
+    }
+    
+    func getPageHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let type = req.query[String.self, at: "term"] else {
+            throw Abort(.badRequest)
+        }
+        guard let commentID = req.query[Int.self, at: "id"] else {
+            throw Abort(.badRequest)
+        }
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        // 查询失败，则返回最新的10条
+        let up = (Int(page) ?? 1) * 10
+        let low = up - 10
+        
+        let joinTuples = Comment.query(on: req).filter(\.status != 0).filter(\.type == type).filter(\.commentID == commentID).range(low..<up).join(\UserInfo.userID, to: \Comment.userID).alsoDecode(UserInfo.self).all()
+        
+        // 将数组转化为想要的字典数据
+        return joinTuples.map { tuples in
+            let data = tuples.map { tuple -> [String : Any] in
+                var msgDict = tuple.0.toDictionary()
+                let userInfoDict = tuple.1.toDictionary()
+                msgDict["userInfo"] = userInfoDict
+                return msgDict
+            }
+            // 创建反应
+            return try createGetResponse(req, data: data)
+        }
     }
     
     func getTuplesHandler(_ req: Request) throws -> Future<Response> {

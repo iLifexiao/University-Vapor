@@ -24,7 +24,8 @@ final class CampusNewsController: RouteCollection {
         group.patch(CampusNews.parameter, use: updateHandler)
         group.delete(CampusNews.parameter, use: deleteHandler)
         
-        group.get("search", use: searchHandler)        
+        group.get("split", use: getPageHandler)
+        group.get("search", use: searchHandler)
         group.get("sort", use: sortedHandler)
     }
     
@@ -34,6 +35,18 @@ extension CampusNewsController {
     func getAllHandler(_ req: Request) throws -> Future<[CampusNews]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return CampusNews.query(on: req).filter(\.status != 0).all()
+    }
+    
+    func getPageHandler(_ req: Request) throws -> Future<[CampusNews]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        // 查询失败，则返回最新的7条
+        let up = (Int(page) ?? 1) * 7
+        let low = up - 7
+        
+        return CampusNews.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).all()
     }
     
     // id

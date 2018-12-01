@@ -22,7 +22,9 @@ final class QuestionController: RouteCollection {
         group.patch(Question.parameter, use: updateHandler)
         group.delete(Question.parameter, use: deleteHandler)
         
-        group.get("search", use: searchHandler)        
+        group.get("search", use: searchHandler)
+        group.get("split", use: getPageHandler)
+        group.get(Question.parameter, "answer", "split", use: getAnswerPageHandler)
         group.get("sort", use: sortedHandler)
     }
     
@@ -32,6 +34,45 @@ extension QuestionController {
     func getAllHandler(_ req: Request) throws -> Future<[Question]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return Question.query(on: req).filter(\.status != 0).all()
+    }
+    
+    func getPageHandler(_ req: Request) throws -> Future<[Question]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        // 查询失败，则返回最新的5条
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        
+        return Question.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).all()
+    }
+    
+    // /id/answer/split?page=1
+    func getAnswerPageHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        return try req.parameters.next(Question.self).flatMap { question in
+            // 查询失败，则返回最新的7条
+            let up = (Int(page) ?? 1) * 7
+            let low = up - 7
+        
+            let joinTuples = try question.answers.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).join(\UserInfo.userID, to: \Answer.userID).alsoDecode(UserInfo.self).all()
+        
+            // 将数组转化为想要的字典数据
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
+                }
+                // 创建反应
+                return try createGetResponse(req, data: data)
+            }
+        }
     }
     
     // id
@@ -52,7 +93,7 @@ extension QuestionController {
     func questionAnswersHandler(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(Question.self).flatMap { question in
-            let joinTuples = try question.answers.query(on: req).filter(\.status != 0).join(\UserInfo.userID, to: \Answer.userID).alsoDecode(UserInfo.self).all()
+            let joinTuples = try question.answers.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).join(\UserInfo.userID, to: \Answer.userID).alsoDecode(UserInfo.self).all()
             
             // 将数组转化为想要的字典数据
             return joinTuples.map { tuples in

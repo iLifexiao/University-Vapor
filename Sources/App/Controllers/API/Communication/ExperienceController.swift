@@ -25,6 +25,7 @@ final class ExperienceController: RouteCollection {
         group.patch(Experience.parameter, use: updateHandler)
         group.delete(Experience.parameter, use: deleteHandler)
         
+        group.get("split", use: getPageHandler)
         group.get("search", use: searchHandler)        
         group.get("sort", use: sortedHandler)
     }
@@ -35,6 +36,30 @@ extension ExperienceController {
     func getAllHandler(_ req: Request) throws -> Future<[Experience]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return Experience.query(on: req).filter(\.status != 0).all()
+    }
+    
+    func getPageHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        // 查询失败，则返回最新的7条
+        let up = (Int(page) ?? 1) * 7
+        let low = up - 7
+        
+        let joinTuples = Experience.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).join(\UserInfo.userID, to: \Experience.userID).alsoDecode(UserInfo.self).all()
+        
+        // 将数组转化为想要的字典数据
+        return joinTuples.map { tuples in
+            let data = tuples.map { tuple -> [String : Any] in
+                var msgDict = tuple.0.toDictionary()
+                let userInfoDict = tuple.1.toDictionary()
+                msgDict["userInfo"] = userInfoDict
+                return msgDict
+            }
+            // 创建反应
+            return try createGetResponse(req, data: data)
+        }        
     }
     
     func getTuplesHandler(_ req: Request) throws -> Future<Response> {

@@ -21,7 +21,8 @@ final class LostAndFoundController: RouteCollection {
         group.patch(LostAndFound.parameter, use: updateHandler)
         group.delete(LostAndFound.parameter, use: deleteHandler)
         
-        group.get("search", use: searchHandler)        
+        group.get("search", use: searchHandler)
+        group.get("split", use: getPageHandler)
         group.get("sort", use: sortedHandler)
     }
     
@@ -31,6 +32,28 @@ extension LostAndFoundController {
     func getAllHandler(_ req: Request) throws -> Future<[LostAndFound]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return LostAndFound.query(on: req).filter(\.status != 0).all()
+    }
+    
+    func getPageHandler(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        // 查询失败，则返回最新的6条
+        let up = (Int(page) ?? 1) * 6
+        let low = up - 6
+        
+        let joinTuples = LostAndFound.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).join(\UserInfo.userID, to: \LostAndFound.userID).alsoDecode(UserInfo.self).all()
+        
+        return joinTuples.map { tuples in
+            let data = tuples.map { tuple -> [String : Any] in
+                var msgDict = tuple.0.toDictionary()
+                let userInfoDict = tuple.1.toDictionary()
+                msgDict["userInfo"] = userInfoDict
+                return msgDict
+            }
+            return try createGetResponse(req, data: data)
+        }
     }
     
     // id

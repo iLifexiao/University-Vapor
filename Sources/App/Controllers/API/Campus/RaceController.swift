@@ -20,6 +20,7 @@ final class RaceController: RouteCollection {
         group.delete(Race.parameter, use: deleteHandler)
         
         group.get("search", use: searchHandler)
+        group.get("split", use: getPageHandler)
         group.get("sort", use: sortedHandler)
     }    
 }
@@ -28,6 +29,18 @@ extension RaceController {
     func getAllHandler(_ req: Request) throws -> Future<[Race]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return Race.query(on: req).filter(\.status != 0).all()
+    }
+    
+    func getPageHandler(_ req: Request) throws -> Future<[Race]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        // 查询失败，则返回最新的5条
+        let up = (Int(page) ?? 1) * 8
+        let low = up - 8
+        
+        return Race.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).all()
     }
     
     // id

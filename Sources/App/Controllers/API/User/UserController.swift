@@ -34,27 +34,37 @@ final class UserController: RouteCollection {
         group.get(User.parameter, "student", "lesson", use: getStudentLesson)
         group.get(User.parameter, "student", "grade", use: getStudentGrade)
         group.get(User.parameter, "focus", use: getFocus)
+        group.get(User.parameter, "focus", "split", use: getFocusPage)
         group.get(User.parameter, "fans", use: getFans)
+        group.get(User.parameter, "fans", "split", use: getFansPage)
         group.get(User.parameter, "fans", "count", use: getFansCount)
         group.get(User.parameter, "collections", use: getCollections)
         group.get(User.parameter, "collections", "essay", use: getEssayCollections)
+        group.get(User.parameter, "collections", "essay", "split", use: getEssayCollections)
         group.get(User.parameter, "collections", "count", use: getCollectionsCount)
         group.get(User.parameter, "honors", use: getHonors)
+        group.get(User.parameter, "honors", "split", use: getHonorsPage)
         group.get(User.parameter, "messages", use: getMessages)
         group.get(User.parameter, "messages", "count", use: getMessagesCount)
         group.get(User.parameter, "sendmessages", use: getSendMessages)
         group.get(User.parameter, "recmessages", use: getRecMessages)
         group.get(User.parameter, "resources", use: getResources)
+        group.get(User.parameter, "resources", "split", use: getResourcesPage)
         group.get(User.parameter, "essays", use: getEssays)
+        group.get(User.parameter, "essays", "split", use: getEssaysPage)
         group.get(User.parameter, "essays", "count", use: getEssaysCount)
         group.get(User.parameter, "books", use: getBooks)
+        group.get(User.parameter, "books", "split", use: getBooksPage)
         group.get(User.parameter, "questions", use: getQuestions)
+        group.get(User.parameter, "questions", "split", use: getQuestionsPage)
         group.get(User.parameter, "answers", use: getAnswers)
+        group.get(User.parameter, "answers", "split", use: getAnswersPage)
         group.get(User.parameter, "experiences", use: getExperiences)
+        group.get(User.parameter, "experiences", "split", use: getExperiencesPage)
         group.get(User.parameter, "comments", use: getComments)
+        group.get(User.parameter, "comments", "split", use: getCommentsPage)
         group.get(User.parameter, "lostandfounds", use: getLostAndFounds)
         group.get(User.parameter, "idlegoods", use: getIdleGoods)
-        
     }
     
 }
@@ -296,11 +306,50 @@ extension UserController {
         }
     }
     
+    func getFocusPage(_ req: Request) throws -> Future<[UserInfo]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap { user in
+            return try user.focus.query(on: req).range(low..<up).all().flatMap(to: [UserInfo].self) { friends in
+                // 等待获取到所有的值
+                var userInfos: [Future<UserInfo>] = []
+                for friend in friends {
+                    userInfos.append(UserInfo.query(on: req).filter(\.userID == friend.focusUserID).first().unwrap(or: Abort(HTTPStatus.notFound)))
+                }
+                return userInfos.flatten(on: req)
+            }
+        }
+    }
+    
     // 获得我的粉丝（关注我的） /id/fans
     func getFans(_ req: Request) throws -> Future<[UserInfo]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap { user in
             return try user.fans.query(on: req).all().flatMap(to: [UserInfo].self) { fans in
+                // 等待获取到所有的值
+                var userInfos: [Future<UserInfo>] = []
+                for fan in fans {
+                    // 解包
+                    userInfos.append(UserInfo.query(on: req).filter(\.userID == fan.userID).first().unwrap(or: Abort(HTTPStatus.notFound)))
+                }
+                return userInfos.flatten(on: req)
+            }
+        }
+    }
+    
+    func getFansPage(_ req: Request) throws -> Future<[UserInfo]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap { user in
+            return try user.fans.query(on: req).range(low..<up).all().flatMap(to: [UserInfo].self) { fans in
                 // 等待获取到所有的值
                 var userInfos: [Future<UserInfo>] = []
                 for fan in fans {
@@ -345,6 +394,26 @@ extension UserController {
         }
     }
     
+    func getEssayCollectionsPage(_ req: Request) throws -> Future<[Essay]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        
+        return try req.parameters.next(User.self).flatMap { user in
+            try user.collections.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).all().flatMap { collections in
+                var essays: [Future<Essay>] = []
+                for collection in collections {
+                    essays.append(Essay.find(collection.collectionID, on: req).unwrap(or: Abort(HTTPStatus.notFound)))
+                }
+                return essays.flatten(on: req)
+            }
+        }
+    }
+
+    
     // 获得我的收藏数量 /id/collections/count
     func getCollectionsCount(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
@@ -361,6 +430,18 @@ extension UserController {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Honor].self) { user in
             try user.honors.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
+        }
+    }
+    
+    func getHonorsPage(_ req: Request) throws -> Future<[Honor]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap(to: [Honor].self) { user in
+            try user.honors.query(on: req).filter(\.status != 0).range(low..<up).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -418,6 +499,18 @@ extension UserController {
         }
     }
     
+    func getResourcesPage(_ req: Request) throws -> Future<[Resource]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap(to: [Resource].self) { user in
+            try user.resources.query(on: req).filter(\.status != 0).range(low..<up).sort(\.createdAt, .descending).all()
+        }
+    }
+    
     // 获得我的文章(倒序) /id/essays
     func getEssays(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
@@ -433,6 +526,28 @@ extension UserController {
                     return msgDict
                 }
                 // 创建反应
+                return try createGetResponse(req, data: data)
+            }
+        }
+    }
+    
+    func getEssaysPage(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap { user in
+            let joinTuples = try user.essays.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).join(\UserInfo.userID, to: \Essay.userID).alsoDecode(UserInfo.self).all()
+            
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
+                }
                 return try createGetResponse(req, data: data)
             }
         }
@@ -457,6 +572,18 @@ extension UserController {
         }
     }
     
+    func getBooksPage(_ req: Request) throws -> Future<[Book]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap(to: [Book].self) { user in
+            try user.books.query(on: req).filter(\.status != 0).range(low..<up).sort(\.createdAt, .descending).all()
+        }
+    }
+    
     // 获得我的问题 /id/questions
     func getQuestions(_ req: Request) throws -> Future<[Question]> {
         _ = try req.requireAuthenticated(APIUser.self)
@@ -465,11 +592,47 @@ extension UserController {
         }
     }
     
+    func getQuestionsPage(_ req: Request) throws -> Future<[Question]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap(to: [Question].self) { user in
+            try user.questions.query(on: req).filter(\.status != 0).range(low..<up).sort(\.createdAt, .descending).all()
+        }
+    }
+    
     // 获得我的回答 /id/answers
     func getAnswers(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap { user in
             let joinTuples = try user.answers.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).join(\UserInfo.userID, to: \Answer.userID).alsoDecode(UserInfo.self).all()
+            
+            // 将数组转化为想要的字典数据
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
+                }
+                // 创建反应
+                return try createGetResponse(req, data: data)
+            }
+        }
+    }
+    
+    func getAnswersPage(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap { user in
+            let joinTuples = try user.answers.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).join(\UserInfo.userID, to: \Answer.userID).alsoDecode(UserInfo.self).all()
             
             // 将数组转化为想要的字典数据
             return joinTuples.map { tuples in
@@ -506,11 +669,60 @@ extension UserController {
         }
     }
     
+    func getExperiencesPage(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap { user in
+            let joinTuples = try user.experiences.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).join(\UserInfo.userID, to: \Experience.userID).alsoDecode(UserInfo.self).all()
+            
+            // 将数组转化为想要的字典数据
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
+                }
+                // 创建反应
+                return try createGetResponse(req, data: data)
+            }
+            
+        }
+    }
+    
     // 获得我的评论 /id/comments
     func getComments(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap { user in
             let joinTuples = try user.comments.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).join(\UserInfo.userID, to: \Comment.userID).alsoDecode(UserInfo.self).all()
+            
+            // 将数组转化为想要的字典数据
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
+                }
+                // 创建反应
+                return try createGetResponse(req, data: data)
+            }
+        }
+    }
+    
+    func getCommentsPage(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap { user in
+            let joinTuples = try user.comments.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).join(\UserInfo.userID, to: \Comment.userID).alsoDecode(UserInfo.self).all()
             
             // 将数组转化为想要的字典数据
             return joinTuples.map { tuples in

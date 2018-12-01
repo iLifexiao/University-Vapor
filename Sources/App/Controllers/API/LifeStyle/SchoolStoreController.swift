@@ -20,6 +20,7 @@ final class SchoolStoreController: RouteCollection {
         group.delete(SchoolStore.parameter, use: deleteHandler)
         
         group.get("search", use: searchHandler)
+        group.get("split", use: getPageHandler)
         group.get("sort", use: sortedHandler)
     }
     
@@ -29,6 +30,18 @@ extension SchoolStoreController {
     func getAllHandler(_ req: Request) throws -> Future<[SchoolStore]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return SchoolStore.query(on: req).filter(\.status != 0).all()
+    }
+    
+    func getPageHandler(_ req: Request) throws -> Future<[SchoolStore]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        // 查询失败，则返回最新的5条
+        let up = (Int(page) ?? 1) * 10
+        let low = up - 10
+        
+        return SchoolStore.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).all()
     }
     
     // id

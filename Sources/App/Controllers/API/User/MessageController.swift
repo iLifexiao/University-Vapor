@@ -70,6 +70,10 @@ extension MessageController {
     // 点击用户发送私信 /message/two
     func createHandlerTwo(_ req: Request, message: Message) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
+        guard message.fromUserID != message.toUserID else {
+            return try ResponseJSON<Empty>(status: .ok, message: "不能给自己发送私信哦~").encode(for: req)
+        }
+        
         message.createdAt = Date().timeIntervalSince1970
         message.status = 1
         
