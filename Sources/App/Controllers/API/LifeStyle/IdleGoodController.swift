@@ -17,6 +17,7 @@ final class IdleGoodController: RouteCollection {
         
         group.post(IdleGood.self, use: createHandler)
         group.patch(IdleGood.parameter, use: updateHandler)
+        group.patch(IdleGood.parameter, "logicdel", use: logicdelHandler)
         group.delete(IdleGood.parameter, use: deleteHandler)
         
         group.get("search", use: searchHandler)

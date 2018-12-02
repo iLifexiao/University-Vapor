@@ -64,7 +64,9 @@ final class UserController: RouteCollection {
         group.get(User.parameter, "comments", use: getComments)
         group.get(User.parameter, "comments", "split", use: getCommentsPage)
         group.get(User.parameter, "lostandfounds", use: getLostAndFounds)
+        group.get(User.parameter, "lostandfounds", "split", use: getLostAndFoundsPage)
         group.get(User.parameter, "idlegoods", use: getIdleGoods)
+        group.get(User.parameter, "idlegoods", "split", use: getIdleGoodsPage)
     }
     
 }
@@ -746,11 +748,35 @@ extension UserController {
         }
     }
     
+    func getLostAndFoundsPage(_ req: Request) throws -> Future<[LostAndFound]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap(to: [LostAndFound].self) { user in
+            try user.lostAndFounds.query(on: req).filter(\.status != 0).range(low..<up).sort(\.createdAt, .descending).all()
+        }
+    }
+    
     // 获得我的闲置物品 /id/idlegoods
     func getIdleGoods(_ req: Request) throws -> Future<[IdleGood]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [IdleGood].self) { user in
             try user.idleGoods.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
+        }
+    }
+    
+    func getIdleGoodsPage(_ req: Request) throws -> Future<[IdleGood]> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        guard let page = req.query[String.self, at: "page"] else {
+            throw Abort(.badRequest)
+        }
+        let up = (Int(page) ?? 1) * 5
+        let low = up - 5
+        return try req.parameters.next(User.self).flatMap(to: [IdleGood].self) { user in
+            try user.idleGoods.query(on: req).filter(\.status != 0).range(low..<up).sort(\.createdAt, .descending).all()
         }
     }
 }
