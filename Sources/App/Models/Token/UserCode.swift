@@ -25,6 +25,12 @@ final class UserCode: PostgreSQLModel {
     }
 }
 
+extension UserCode {
+    var user: Parent<UserCode, User> {
+        return parent(\.userID)
+    }
+}
+
 extension UserCode: PostgreSQLMigration { }
 extension UserCode: Content { }
 extension UserCode: Parameter { }

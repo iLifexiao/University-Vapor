@@ -294,7 +294,7 @@ extension CommentController {
             throw Abort(.badRequest)
         }
         // 通过类型 和 ID 唯一确定评论
-        let joinTuples = Comment.query(on: req).filter(\.status != 0).filter(\.type == type).filter(\.commentID == commentID).join(\UserInfo.userID, to: \Comment.userID).alsoDecode(UserInfo.self).all()
+        let joinTuples = Comment.query(on: req).filter(\.status != 0).filter(\.type == type).filter(\.commentID == commentID).sort(\.createdAt, .descending).join(\UserInfo.userID, to: \Comment.userID).alsoDecode(UserInfo.self).all()
         
         // 将数组转化为想要的字典数据
         return joinTuples.map { tuples in

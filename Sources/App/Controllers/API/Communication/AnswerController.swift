@@ -43,7 +43,7 @@ extension AnswerController {
         guard let page = req.query[String.self, at: "page"] else {
             throw Abort(.badRequest)
         }
-        // 查询失败，则返回最新的5条
+        // 查询失败，则返回最新的7条
         let up = (Int(page) ?? 1) * 7
         let low = up - 7
         

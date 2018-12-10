@@ -44,6 +44,9 @@ extension User {
         let password: String
         let code: String
     }
+    var userCode: Children<User, UserCode> {
+        return children(\.userID)
+    }
     // 用户信息1:1
     var userInfo: Children<User, UserInfo> {
         return children(\.userID)

@@ -10,6 +10,14 @@ public func routes(_ router: Router) throws {
     router.get("view") { req -> Future<View> in
         return try req.view().render("welcome")
     }
+    
+    router.get("keyboard") { req -> Future<View> in
+        return try req.view().render("keyboard")
+    }
+    
+    router.get("roboot") { req -> Future<View> in
+        return try req.view().render("reboot")
+    }
 
     // 御用创建和使用认证，后期可以移除
     let apiUserController = APIUserController()

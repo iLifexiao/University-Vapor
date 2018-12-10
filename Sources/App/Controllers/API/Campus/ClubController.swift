@@ -37,9 +37,9 @@ extension ClubController {
         guard let page = req.query[String.self, at: "page"] else {
             throw Abort(.badRequest)
         }
-        // 查询失败，则返回最新的5条
-        let up = (Int(page) ?? 1) * 8
-        let low = up - 8
+        // 查询失败，则返回最新的10条
+        let up = (Int(page) ?? 1) * 10
+        let low = up - 10
         
         return Club.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).all()
     }

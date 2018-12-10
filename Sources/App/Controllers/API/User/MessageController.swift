@@ -19,6 +19,7 @@ final class MessageController: RouteCollection {
         group.post(Message.self, use: createHandler)
         group.post(Message.self, at: "two", use: createHandlerTwo)
         group.post(Message.PeopleIM.self, at: "delall", use: delAllHandler)
+        group.post(Message.PeopleIM.self, at: "readall", use: readAllHandler)
         group.post(Message.PeopleIM.self, at: "showim", use: getPeopleIMHandler)
         group.post(Message.SendAccount.self, at: "account", use: sendMsgByAccount)
         group.delete(Message.parameter, use: deleteHandler)
@@ -33,7 +34,7 @@ extension MessageController {
     // 表的链接，返回元组
     func getAllHandler(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Message.query(on: req).filter(\.status != 0).all()
+        return Message.query(on: req).filter(\.status != 0).filter(\.status != 3).all()
     }
     
     func getTuplesHandler(_ req: Request) throws -> Future<Response> {
@@ -75,7 +76,7 @@ extension MessageController {
         }
         
         message.createdAt = Date().timeIntervalSince1970
-        message.status = 1
+        message.status = 2
         
         // 第二条信息
         let msg2 = Message(userID: message.friendID, friendID: message.userID, fromUserID: message.fromUserID, toUserID: message.toUserID, content: message.content)
@@ -105,7 +106,7 @@ extension MessageController {
             }
             
             // 表的设计，保证单方用户删除信息不会造成干扰
-            let msg1 = Message(userID: message.userID, friendID: existUser.id!, fromUserID: message.userID, toUserID: existUser.id!, content: message.content, type: message.type, status: 1)
+            let msg1 = Message(userID: message.userID, friendID: existUser.id!, fromUserID: message.userID, toUserID: existUser.id!, content: message.content, type: message.type, status: 2)
             msg1.createdAt = Date().timeIntervalSince1970
             let msg2 = Message(userID: existUser.id!, friendID: message.userID, fromUserID: message.userID, toUserID: existUser.id!, content: message.content, type: message.type, status: 1)
             msg2.createdAt = msg1.createdAt
@@ -123,14 +124,14 @@ extension MessageController {
         }
     }
     
-    // 逻辑删除（status = 0）/id/logicdel    
+    // 逻辑删除（status = 3）/id/logicdel
     func logicdelHandler(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(Message.self).flatMap { message in
-            guard message.status != 0 else {
+            guard message.status != 3 else {
                 return try ResponseJSON<Empty>(status: .ok, message: "已经删除").encode(for: req)
             }
-            message.status = 0
+            message.status = 3
             message.updatedAt = Date().timeIntervalSince1970
             return message.save(on: req).flatMap { _ in
                 return try ResponseJSON<Empty>(status: .ok, message: "删除成功").encode(for: req)
@@ -140,10 +141,10 @@ extension MessageController {
     
     func delAllHandler(_ req: Request, info: Message.PeopleIM) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Message.query(on: req).filter(\.userID == info.userID).filter(\.friendID == info.friendID).all().flatMap { messages in
+        return Message.query(on: req).filter(\.userID == info.userID).filter(\.friendID == info.friendID).filter(\.status != 0).filter(\.status != 3).all().flatMap { messages in
             var responses: [Future<Message>] = []
             for msg in messages {
-                msg.status = 0
+                msg.status = 3
                 msg.updatedAt = Date().timeIntervalSince1970
                 responses.append(msg.save(on: req))
             }
@@ -152,11 +153,43 @@ extension MessageController {
             }
         }
     }
-    
-    
-    func getPeopleIMHandler(_ req: Request, info: Message.PeopleIM) throws -> Future<[Message]> {
+
+    func readAllHandler(_ req: Request, info: Message.PeopleIM) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Message.query(on: req).filter(\.userID == info.userID).filter(\.friendID == info.friendID).all()
+        return Message.query(on: req).filter(\.userID == info.userID).filter(\.friendID == info.friendID).filter(\.status == 1).all().flatMap { messages in
+            var responses: [Future<Message>] = []
+            for msg in messages {
+                msg.status = 2
+                msg.updatedAt = Date().timeIntervalSince1970
+                responses.append(msg.save(on: req))
+            }
+            return responses.flatten(on: req).flatMap { _ in
+                return try ResponseJSON<Empty>(status: .ok, message: "标记全部已读成功").encode(for: req)
+            }
+        }
+    }
+    
+    func getPeopleIMHandler(_ req: Request, info: Message.PeopleIM) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        let joinTuples = Message.query(on: req).filter(\.userID == info.userID).filter(\.friendID == info.friendID).filter(\.status != 0).filter(\.status != 3).join(\UserInfo.userID, to: \Message.friendID).alsoDecode(UserInfo.self).all()
+        
+        // 将数组转化为想要的字典数据
+        return joinTuples.map { tuples in
+            let data = tuples.map { tuple -> [String : Any] in
+                let msg = tuple.0
+                if msg.status == 1 {
+                    msg.status = 2
+                    msg.updatedAt = Date().timeIntervalSince1970
+                    _ = msg.save(on: req)
+                }
+                var msgDict = msg.toDictionary()
+                let userInfoDict = tuple.1.toDictionary()
+                msgDict["userInfo"] = userInfoDict
+                return msgDict
+            }
+            // 创建反应
+            return try createGetResponse(req, data: data)
+        }
     }
     
     // id
@@ -169,7 +202,7 @@ extension MessageController {
     
     func sortedHandler(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
-        return Message.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
+        return Message.query(on: req).filter(\.status != 0).filter(\.status != 3).sort(\.createdAt, .descending).all()
     }
 }
 

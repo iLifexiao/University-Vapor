@@ -78,19 +78,28 @@ extension UserCodeController {
             }.all()
     }
     
-    // used?code=
+    // used?acc=&code=
     func useUserCode(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
+        guard let acc = req.query[String.self, at: "acc"] else {
+            throw Abort(.badRequest)
+        }
         guard let code = req.query[String.self, at: "code"] else {
             throw Abort(.badRequest)
         }
-        let userCode = UserCode.query(on: req).filter(\.code == code).filter(\.status != 0).first()
-        return userCode.flatMap { existCode in
-            // 注册码错误
-            guard existCode != nil else {
-                return try ResponseJSON<Empty>(status: .userCodeInvalid).encode(for: req)
+        return User.query(on: req).filter(\.account == acc).first().flatMap { user in
+            guard let user = user else {
+                return try ResponseJSON<Empty>(status: .error, message: "用户不存在").encode(for: req)
+            }            
+            return try user.userCode.query(on: req)
+                .filter(\.code == code)
+                .filter(\.status != 0).first().flatMap { existCode in
+                // 注册码错误
+                guard existCode != nil else {
+                    return try ResponseJSON<Empty>(status: .userCodeInvalid).encode(for: req)
+                }
+                return try ResponseJSON<Empty>(status: .ok, message: "修改码有效").encode(for: req)
             }
-            return try ResponseJSON<Empty>(status: .ok, message: "修改码有效").encode(for: req)
         }
     }
     

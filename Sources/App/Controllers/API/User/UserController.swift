@@ -40,12 +40,13 @@ final class UserController: RouteCollection {
         group.get(User.parameter, "fans", "count", use: getFansCount)
         group.get(User.parameter, "collections", use: getCollections)
         group.get(User.parameter, "collections", "essay", use: getEssayCollections)
-        group.get(User.parameter, "collections", "essay", "split", use: getEssayCollections)
+        group.get(User.parameter, "collections", "essay", "split", use: getEssayCollectionsPage)
         group.get(User.parameter, "collections", "count", use: getCollectionsCount)
         group.get(User.parameter, "honors", use: getHonors)
         group.get(User.parameter, "honors", "split", use: getHonorsPage)
         group.get(User.parameter, "messages", use: getMessages)
         group.get(User.parameter, "messages", "count", use: getMessagesCount)
+        group.get(User.parameter, "messages", "unread" ,"count", use: getUnreadMessagesCount)
         group.get(User.parameter, "sendmessages", use: getSendMessages)
         group.get(User.parameter, "recmessages", use: getRecMessages)
         group.get(User.parameter, "resources", use: getResources)
@@ -195,19 +196,20 @@ extension UserController {
                 return try ResponseJSON<Empty>(status: .userNotExist).encode(for: req)
             }
             
-            let userCode = UserCode.query(on: req).filter(\.code == user.code).first()
-            return userCode.flatMap { existCode in
-                // 修改码错误
-                guard existCode != nil else {
-                    return try ResponseJSON<Empty>(status: .userCodeInvalid).encode(for: req)
-                }
-                let hasher = try req.make(BCryptDigest.self)
-                let passwordHashed = try hasher.hash(user.password)
-                existingUser.password = passwordHashed
-                                
-                return existingUser.save(on: req).flatMap{ _ in
-                    return try ResponseJSON<Empty>(status: .ok).encode(for: req)
-                }
+            return try existingUser.userCode.query(on: req)
+                .filter(\.code == user.code)
+                .filter(\.status != 0).first().flatMap { existCode in
+                    // 修改码错误
+                    guard existCode != nil else {
+                        return try ResponseJSON<Empty>(status: .userCodeInvalid).encode(for: req)
+                    }
+                    let hasher = try req.make(BCryptDigest.self)
+                    let passwordHashed = try hasher.hash(user.password)
+                    existingUser.password = passwordHashed
+                    
+                    return existingUser.save(on: req).flatMap{ _ in
+                        return try ResponseJSON<Empty>(status: .ok).encode(for: req)
+                    }
             }
         }
     }
@@ -313,8 +315,8 @@ extension UserController {
         guard let page = req.query[String.self, at: "page"] else {
             throw Abort(.badRequest)
         }
-        let up = (Int(page) ?? 1) * 5
-        let low = up - 5
+        let up = (Int(page) ?? 1) * 10
+        let low = up - 10
         return try req.parameters.next(User.self).flatMap { user in
             return try user.focus.query(on: req).range(low..<up).all().flatMap(to: [UserInfo].self) { friends in
                 // 等待获取到所有的值
@@ -348,8 +350,8 @@ extension UserController {
         guard let page = req.query[String.self, at: "page"] else {
             throw Abort(.badRequest)
         }
-        let up = (Int(page) ?? 1) * 5
-        let low = up - 5
+        let up = (Int(page) ?? 1) * 10
+        let low = up - 10
         return try req.parameters.next(User.self).flatMap { user in
             return try user.fans.query(on: req).range(low..<up).all().flatMap(to: [UserInfo].self) { fans in
                 // 等待获取到所有的值
@@ -396,7 +398,7 @@ extension UserController {
         }
     }
     
-    func getEssayCollectionsPage(_ req: Request) throws -> Future<[Essay]> {
+    func getEssayCollectionsPage(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         guard let page = req.query[String.self, at: "page"] else {
             throw Abort(.badRequest)
@@ -405,12 +407,20 @@ extension UserController {
         let low = up - 5
         
         return try req.parameters.next(User.self).flatMap { user in
-            try user.collections.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).all().flatMap { collections in
-                var essays: [Future<Essay>] = []
-                for collection in collections {
-                    essays.append(Essay.find(collection.collectionID, on: req).unwrap(or: Abort(HTTPStatus.notFound)))
+            let joinTuples = try user.collections.query(on: req).filter(\.status != 0)
+                .range(low..<up)
+                .join(\Essay.id, to: \Collection.collectionID).alsoDecode(Essay.self)
+                .join(\UserInfo.userID, to: \Essay.userID).alsoDecode(UserInfo.self)
+                .all()
+            
+            return joinTuples.map { tuples in
+                let data = tuples.map { tuple -> [String : Any] in
+                    var msgDict = tuple.0.1.toDictionary()
+                    let userInfoDict = tuple.1.toDictionary()
+                    msgDict["userInfo"] = userInfoDict
+                    return msgDict
                 }
-                return essays.flatten(on: req)
+                return try createGetResponse(req, data: data)
             }
         }
     }
@@ -440,8 +450,8 @@ extension UserController {
         guard let page = req.query[String.self, at: "page"] else {
             throw Abort(.badRequest)
         }
-        let up = (Int(page) ?? 1) * 5
-        let low = up - 5
+        let up = (Int(page) ?? 1) * 10
+        let low = up - 10
         return try req.parameters.next(User.self).flatMap(to: [Honor].self) { user in
             try user.honors.query(on: req).filter(\.status != 0).range(low..<up).sort(\.createdAt, .descending).all()
         }
@@ -451,7 +461,7 @@ extension UserController {
     func getMessages(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap { user in
-            let joinTuples = try user.messages.query(on: req).filter(\.status != 0).join(\UserInfo.userID, to: \Message.friendID).alsoDecode(UserInfo.self).all()
+            let joinTuples = try user.messages.query(on: req).filter(\.status != 0).filter(\.status != 3).join(\UserInfo.userID, to: \Message.friendID).alsoDecode(UserInfo.self).all()
             return joinTuples.map { tuples in
                 let data = tuples.map { tuple -> [String : Any] in
                     var msgDict = tuple.0.toDictionary()
@@ -469,8 +479,19 @@ extension UserController {
     func getMessagesCount(_ req: Request) throws -> Future<Response> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap { user in
-            try user.messages.query(on: req).filter(\.status != 0).all().flatMap { messages in
+            try user.messages.query(on: req).filter(\.status != 0).filter(\.status != 3).all().flatMap { messages in
                 let info = InfoCount(key: "messages", value: messages.count)
+                return try ResponseJSON<InfoCount>(data: info).encode(for: req)
+            }
+        }
+    }
+    
+    // 获得我的未读信息数量 /id/messages/unread/count
+    func getUnreadMessagesCount(_ req: Request) throws -> Future<Response> {
+        _ = try req.requireAuthenticated(APIUser.self)
+        return try req.parameters.next(User.self).flatMap { user in
+            try user.messages.query(on: req).filter(\.fromUserID != user.id!).filter(\.status == 1).all().flatMap { messages in
+                let info = InfoCount(key: "unreadMessages", value: messages.count)
                 return try ResponseJSON<InfoCount>(data: info).encode(for: req)
             }
         }
@@ -481,7 +502,7 @@ extension UserController {
     func getSendMessages(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Message].self) { user in
-            try user.sendMessages.query(on: req).filter(\.userID == user.id!).filter(\.status != 0).sort(\.createdAt, .descending).all()
+            try user.sendMessages.query(on: req).filter(\.userID == user.id!).filter(\.status != 0).filter(\.status != 3).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -489,7 +510,7 @@ extension UserController {
     func getRecMessages(_ req: Request) throws -> Future<[Message]> {
         _ = try req.requireAuthenticated(APIUser.self)
         return try req.parameters.next(User.self).flatMap(to: [Message].self) { user in
-            try user.recMessages.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).all()
+            try user.recMessages.query(on: req).filter(\.status != 0).filter(\.status != 3).sort(\.createdAt, .descending).all()
         }
     }
     
@@ -721,8 +742,8 @@ extension UserController {
         guard let page = req.query[String.self, at: "page"] else {
             throw Abort(.badRequest)
         }
-        let up = (Int(page) ?? 1) * 5
-        let low = up - 5
+        let up = (Int(page) ?? 1) * 10
+        let low = up - 10
         return try req.parameters.next(User.self).flatMap { user in
             let joinTuples = try user.comments.query(on: req).filter(\.status != 0).sort(\.createdAt, .descending).range(low..<up).join(\UserInfo.userID, to: \Comment.userID).alsoDecode(UserInfo.self).all()
             
