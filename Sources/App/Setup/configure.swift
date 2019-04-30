@@ -26,12 +26,12 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     // 注册Auth
     try services.register(AuthenticationProvider())
     
-    /// 注册中间组件
+    // 注册中间组件
     var middlewaresConfig = MiddlewareConfig()
     try middlewares(config: &middlewaresConfig)
     services.register(middlewaresConfig)            
     
-    /// 配置数据库迁移
+    // 配置数据库迁移
     var migrations = MigrationConfig()
     try migrate(migrations: &migrations)
     services.register(migrations)
