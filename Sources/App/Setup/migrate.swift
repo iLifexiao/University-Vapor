@@ -55,12 +55,13 @@ public func migrate(migrations: inout MigrationConfig) throws {
     migrations.add(model: Comment.self, database: .psql)
     
     // 迁移(新增read/like、comment字段) migration
-    migrations.add(migration: UpdateCampusNewsField.self, database: .psql)
-    migrations.add(migration: UpdateResourceField.self, database: .psql)
-    migrations.add(migration: UpdateAnswerField.self, database: .psql)
-    migrations.add(migration: UpdateExperienceField.self, database: .psql)
-    migrations.add(migration: UpdateBookField.self, database: .psql)
-    migrations.add(migration: UpdateMessageField.self, database: .psql)    
+    // TODO: 如果提示存在某个字段，那么注释这些迁移数据
+//    migrations.add(migration: UpdateCampusNewsField.self, database: .psql)
+//    migrations.add(migration: UpdateResourceField.self, database: .psql)
+//    migrations.add(migration: UpdateAnswerField.self, database: .psql)
+//    migrations.add(migration: UpdateExperienceField.self, database: .psql)
+//    migrations.add(migration: UpdateBookField.self, database: .psql)
+//    migrations.add(migration: UpdateMessageField.self, database: .psql)
     
     
     // LifeStype

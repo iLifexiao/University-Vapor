@@ -9,11 +9,11 @@ import Vapor
 import FluentPostgreSQL
 
 public func databases(config: inout DatabasesConfig) throws {
-    /// 配置数据库
+    /// 配置数据库（根据你的实际情况配置）
     let postgresqlConfig = PostgreSQLDatabaseConfig(
         hostname: "127.0.0.1",
         port: 5432,
-        username: "iLife",
+        username: "ilife",
         database: "vapor",
         password: nil
     )
